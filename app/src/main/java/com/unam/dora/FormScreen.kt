@@ -1,4 +1,4 @@
-package com.unam.dora.ui
+package com.unam.dora
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -7,20 +7,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/**
- * A form to collect city, days and mood selections.
- * onGenerate is a **normal** callback, not a @Composable lambda.
- */
+
 @Composable
 fun FormScreen(
     onGenerate: (city: String, days: Int, moods: List<String>) -> Unit
 ) {
     var city by remember { mutableStateOf("") }
     var days by remember { mutableStateOf(1f) }
+
     val moodOptions = listOf(
-        "Relaxation 😊", "Art 🎨", "Foodie 🍕",
-        "History 🏛️", "Beach 🏖️", "Nightlife 🎉"
+        "Relaxation 😊" to "relaxation",
+        "Art 🎨" to "art",
+        "Foodie 🍕" to "food",
+        "History 🏛️" to "history",
+        "Beach 🏖️" to "beach",
+        "Nightlife 🎉" to "nightlife"
     )
+
     val selectedMoods = remember { mutableStateListOf<String>() }
 
     Column(
@@ -53,15 +56,15 @@ fun FormScreen(
         Text("Select your interests:")
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(moodOptions.size) { idx ->
-                val mood = moodOptions[idx]
-                val isSelected = mood in selectedMoods
+                val (displayText, apiValue) = moodOptions[idx]
+                val isSelected = apiValue in selectedMoods
                 FilterChip(
                     selected = isSelected,
                     onClick = {
-                        if (isSelected) selectedMoods.remove(mood)
-                        else selectedMoods.add(mood)
+                        if (isSelected) selectedMoods.remove(apiValue)
+                        else selectedMoods.add(apiValue)
                     },
-                    label = { Text(mood) }
+                    label = { Text(displayText) }
                 )
             }
         }
@@ -70,7 +73,6 @@ fun FormScreen(
 
         Button(
             onClick = {
-                // directly invoke the callback from within a @Composable scope
                 onGenerate(city.trim(), days.toInt(), selectedMoods.toList())
             },
             enabled = city.isNotBlank() && selectedMoods.isNotEmpty(),

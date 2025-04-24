@@ -1,5 +1,7 @@
 package com.unam.dora
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,9 +16,11 @@ import com.unam.dora.Message
 import com.unam.dora.ChatViewModel
 import com.unam.dora.MessageBubble
 import com.unam.dora.InputBar
+import androidx.hilt.navigation.compose.hiltViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ConversationScreen(vm: ChatViewModel = viewModel()) {
+fun ConversationScreen(vm: ChatViewModel = hiltViewModel()) {
     val messages by vm.messages.collectAsState()
     var inputText by remember { mutableStateOf("") }
 

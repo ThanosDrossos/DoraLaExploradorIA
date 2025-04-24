@@ -8,9 +8,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val properties = org.jetbrains.kotlin.konan.properties.loadProperties(rootProject.file("local.properties")
+    .toString())
+val apiKey = properties.getProperty("apiKey")
+
 android {
     namespace = "com.unam.dora"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.unam.dora"
@@ -32,6 +36,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "API_KEY", "\"${apiKey}\"")
+        }
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            buildConfigField("String", "API_KEY", "\"${apiKey}\"")
         }
     }
     compileOptions {
@@ -67,9 +77,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.generativeai)
-    implementation(libs.androidx.room.common.jvm)
-    implementation(libs.androidx.room.compiler)
-    implementation(libs.androidx.room.runtime.android)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")  // Für Kotlin-Unterstützung (Flow)
+    ksp("androidx.room:room-compiler:2.6.1")
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -91,4 +101,6 @@ dependencies {
     ksp("com.google.dagger:dagger-compiler:2.56.1")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
 }

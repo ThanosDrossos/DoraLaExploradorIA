@@ -11,5 +11,5 @@ interface MessageDao {
     fun getAllMessages(): Flow<List<Message>>
 
     @Insert
-    suspend fun insertMessage(message: Message)
+    suspend fun insertMessage(message: Message): Long
 }
