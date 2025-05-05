@@ -11,7 +11,7 @@
 
 ## 📱 Un Asistente de Viaje Potenciado por IA
 
-DoraLaExploradorIA es un proyecto desarrollado para la clase de [NOMBRE DE LA CLASE] en UNAM que reinventa la planificación de viajes mediante la integración de inteligencia artificial. La aplicación permite a los usuarios planear, personalizar y disfrutar sus viajes de forma rápida, intuitiva y confiable a través de una interfaz conversacional potenciada por el modelo LLM Gemini de Google.
+DoraLaExploradorIA es un proyecto desarrollado para la clase de "Diseño e Implementación de Interfaces Inteligentes" en la UNAM que reinventa la planificación de viajes mediante la integración de inteligencia artificial. La aplicación permite a los usuarios planear, personalizar y disfrutar sus viajes de forma rápida, intuitiva y confiable a través de una interfaz conversacional potenciada por el modelo LLM Gemini de Google.
 
 ## 🌟 Características Principales
 
