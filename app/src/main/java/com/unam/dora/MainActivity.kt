@@ -31,24 +31,28 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TravelAppNavGraph() {
     val navController = rememberNavController()
+    // Gemeinsames ViewModel für alle Screens
+    val sharedViewModel: ChatViewModel = hiltViewModel()
+
     NavHost(navController = navController, startDestination = "form") {
         composable("form") {
-            val vm: ChatViewModel = hiltViewModel()
             FormScreen(
                 onGenerate = { city, days, moods ->
-                    vm.setTripPreferences(city, days, moods)
-                    vm.generateItinerary()
+                    sharedViewModel.setTripPreferences(city, days, moods)
+                    sharedViewModel.generateItinerary()
                     navController.navigate("dashboard") {
-                        popUpTo("form")
+                        popUpTo("form") { inclusive = true }  // remove form from backstack
                     }
                 }
             )
         }
         composable("dashboard") {
-            DashboardScreen()
+            // Gemeinsames ViewModel weitergeben
+            DashboardScreen(viewModel = sharedViewModel)
         }
         composable("chat") {
-            ConversationScreen()
+            // Gemeinsames ViewModel weitergeben
+            ConversationScreen(vm = sharedViewModel)
         }
     }
 }

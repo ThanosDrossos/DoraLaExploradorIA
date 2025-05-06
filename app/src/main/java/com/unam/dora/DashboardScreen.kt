@@ -13,7 +13,7 @@ import java.time.LocalDate
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DashboardScreen(
-    viewModel: ChatViewModel = hiltViewModel()
+    viewModel: ChatViewModel = hiltViewModel()  // Default für Preview
 ) {
     val itinerary by viewModel.itinerary.collectAsState()
     val messages by viewModel.messages.collectAsState()
@@ -21,29 +21,13 @@ fun DashboardScreen(
     var selectedDay by remember { mutableStateOf(1) }
     var chatExpanded by remember { mutableStateOf(false) }
 
-    // Reset selectedDay wenn benötigt
-    LaunchedEffect(itinerary) {
-        if (itinerary?.days?.none { it.day == selectedDay } == true) {
-            selectedDay = 1
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        // Kalender-/Listenansicht mit debug-Informationen
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (itinerary == null) {
-                Text(
-                    text = "No hay itinerario disponible.",
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            CalendarView(
-                itinerary = itinerary,
-                currentDay = selectedDay,
-                onDaySelected = { selectedDay = it }
-            )
-        }
+        // Kalenderansicht
+        CalendarView(
+            itinerary = itinerary,
+            currentDay = selectedDay,
+            onDaySelected = { selectedDay = it }
+        )
 
         // Erweiterbare Chat-Leiste am unteren Rand
         Column(
@@ -54,9 +38,7 @@ fun DashboardScreen(
                 messages = messages,
                 isExpanded = chatExpanded,
                 onExpandToggle = { chatExpanded = !chatExpanded },
-                onSendMessage = { message ->
-                    viewModel.sendUserMessage(message)
-                },
+                onSendMessage = { viewModel.sendUserMessage(it) },
                 onMoodSelected = { mood ->
                     viewModel.updateItineraryWithMood(selectedDay, mood)
                 }

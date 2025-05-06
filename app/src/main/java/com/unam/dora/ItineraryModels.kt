@@ -1,5 +1,6 @@
 package com.unam.dora
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,8 +12,12 @@ data class Itinerary(
 @Serializable
 data class DayPlan(
     val day: Int,
+    @SerialName("events") private val _events: List<Event>? = null,
+    @SerialName("activities") private val _activities: List<Event>? = null
+) {
     val events: List<Event>
-)
+        get() = _events ?: _activities ?: emptyList()
+}
 
 @Serializable
 data class Event(
