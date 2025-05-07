@@ -25,6 +25,7 @@ fun CalendarView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fillMaxHeight()
             .padding(16.dp)
     ) {
         // Überschrift mit Stadt
@@ -62,6 +63,9 @@ fun CalendarView(
                 ) {
                     items(dayPlan.events) { event ->
                         EventCard(event = event)
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(150.dp))
                     }
                 }
             }
