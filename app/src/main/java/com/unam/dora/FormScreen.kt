@@ -12,8 +12,18 @@ import androidx.compose.ui.unit.dp
 fun FormScreen(
     onGenerate: (city: String, days: Int, moods: List<String>) -> Unit
 ) {
+
     var city by remember { mutableStateOf("") }
     var days by remember { mutableStateOf(1f) }
+
+    // Easter Egg Überprüfung
+    LaunchedEffect(city) {
+        if (city.trim() == "Mochila Mochila") {
+            EasterEggState.showSplash = true
+            EasterEggState.isHackerThemeEnabled = true
+            city = ""  // Setzt das Eingabefeld zurück
+        }
+    }
 
     val moodOptions = listOf(
         "Relaxation 😊" to "relaxation",

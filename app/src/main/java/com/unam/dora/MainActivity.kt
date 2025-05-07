@@ -14,14 +14,33 @@ import com.unam.dora.ui.theme.DoraLaExploradorIATheme
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import com.unam.dora.ui.theme.ThemeDark
+import androidx.compose.runtime.*
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            DoraLaExploradorIATheme {
-                TravelAppNavGraph()
+            if (EasterEggState.showSplash) {
+                HackerSplashScreen {
+                    EasterEggState.showSplash = false
+                }
+            } else {
+                if (EasterEggState.isHackerThemeEnabled) {
+                    ThemeDark {
+                        TravelAppNavGraph()
+                    }
+                } else {
+                    DoraLaExploradorIATheme {
+                        TravelAppNavGraph()
+                    }
+                }
             }
         }
     }
@@ -31,28 +50,30 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TravelAppNavGraph() {
     val navController = rememberNavController()
-    // Gemeinsames ViewModel für alle Screens
     val sharedViewModel: ChatViewModel = hiltViewModel()
 
-    NavHost(navController = navController, startDestination = "form") {
-        composable("form") {
-            FormScreen(
-                onGenerate = { city, days, moods ->
-                    sharedViewModel.setTripPreferences(city, days, moods)
-                    sharedViewModel.generateItinerary()
-                    navController.navigate("dashboard") {
-                        popUpTo("form") { inclusive = true }  // remove form from backstack
+    Surface(                                      // Neue Surface hier
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        NavHost(navController = navController, startDestination = "form") {
+            composable("form") {
+                FormScreen(
+                    onGenerate = { city, days, moods ->
+                        sharedViewModel.setTripPreferences(city, days, moods)
+                        sharedViewModel.generateItinerary()
+                        navController.navigate("dashboard") {
+                            popUpTo("form") { inclusive = true }
+                        }
                     }
-                }
-            )
-        }
-        composable("dashboard") {
-            // Gemeinsames ViewModel weitergeben
-            DashboardScreen(viewModel = sharedViewModel)
-        }
-        composable("chat") {
-            // Gemeinsames ViewModel weitergeben
-            ConversationScreen(vm = sharedViewModel)
+                )
+            }
+            composable("dashboard") {
+                DashboardScreen(viewModel = sharedViewModel)
+            }
+            composable("chat") {
+                ConversationScreen(vm = sharedViewModel)
+            }
         }
     }
 }
