@@ -36,9 +36,21 @@ fun CalendarView(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
-
-        // Tabulatoren für Tagesauswahl
-        if (itinerary != null && itinerary.days.isNotEmpty()) {
+        if (itinerary?.error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = itinerary.error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
+        } else if (itinerary != null && itinerary.days.isNotEmpty()) {
             // Tagesauswahl
             ScrollableTabRow(
                 selectedTabIndex = currentDay - 1,

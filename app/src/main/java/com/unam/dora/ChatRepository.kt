@@ -90,7 +90,11 @@ class ChatRepository(
                     ignoreUnknownKeys = true
                 }.decodeFromString<Itinerary>(jsonText)
             } catch (e: Exception) {
-                throw e
+                Itinerary(
+                    city = "", // Leerer String für city
+                    days = emptyList(), // Leere Liste für days
+                    error = "Error de Red"
+                )
             }
         }
 
