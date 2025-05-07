@@ -87,7 +87,7 @@ git clone https://github.com/ThanosDrossos/DoraLaExploradorIA.git
 
 4. Configure su API key de Gemini en el archivo `local.properties`:
 ```properties
-GEMINI_API_KEY=su_api_key_aquí
+apiKey=su_api_key_aquí
 ```
 
 5. Ejecute la aplicación en un emulador o dispositivo con Android 7.0 (API 24) o superior.
