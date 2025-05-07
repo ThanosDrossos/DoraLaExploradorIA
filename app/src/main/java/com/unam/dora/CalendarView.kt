@@ -66,7 +66,6 @@ fun CalendarView(
                 }
             }
         } else {
-            // Keine Daten vorhanden
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -74,10 +73,26 @@ fun CalendarView(
                     .background(MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No hay itinerario disponible.\nPide a Dora que cree uno para ti.",
-                    textAlign = TextAlign.Center
-                )
+                if (itinerary?.isLoading == true) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Text(
+                            text = "Construyendo tu itinerario...",
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No hay itinerario disponible.\nPide a Dora que cree uno para ti.",
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }

@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Itinerary(
     val city: String,
-    val days: List<DayPlan>
+    val days: List<DayPlan>,
+    var isLoading: Boolean = false
 )
 
 @Serializable

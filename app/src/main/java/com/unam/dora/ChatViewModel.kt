@@ -3,6 +3,7 @@ package com.unam.dora
 
 import android.app.Application
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -39,7 +41,15 @@ class ChatViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // --- Itinerary & Schedule state ---
-    private val _itinerary = MutableStateFlow<Itinerary?>(null)
+    // In ChatViewModel.kt
+    private val _itinerary = MutableStateFlow<Itinerary?>(
+        Itinerary(
+            city = "",
+            days = emptyList(),
+            isLoading = false
+        )
+    )
+
     val itinerary: StateFlow<Itinerary?> = _itinerary
 
     private val _schedule = MutableStateFlow<List<ScheduledEvent>>(emptyList())
@@ -63,6 +73,8 @@ class ChatViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun generateItinerary() {
         viewModelScope.launch {
+            Log.e("TAG", "Error message")    // Error
+            _itinerary.update { it?.copy(isLoading = true) }
             // 1️⃣ Echo user prompt in chat
             val prompt = buildItineraryPrompt()
             repository.insertMessage(Message(sender = Sender.USER, content = prompt))
@@ -79,6 +91,8 @@ class ChatViewModel @Inject constructor(
             val events = buildSchedule(rawItinerary)
             _schedule.value = events
 
+            _itinerary.update { it?.copy(isLoading = false) }
+            Log.e("TAG", "Error message 2")    // Error
             // 5️⃣ (Optional) Persist raw JSON for history
             // repo.insertMessage(Message(sender = Sender.ASSISTANT, content = rawItineraryJson))
         }
