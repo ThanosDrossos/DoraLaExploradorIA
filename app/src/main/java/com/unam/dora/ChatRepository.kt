@@ -26,7 +26,7 @@ class ChatRepository(
     /**
      * Calls Gemini API with a structured prompt, returns the Itinerary data class.
      */
-    suspend fun fetchItinerary(prompt: String): Itinerary =
+    suspend fun fetchItinerary(prompt: String, city: String, days: Int, moods: List<String>): Itinerary =
         withContext(Dispatchers.IO) {
             try {
                 val includeCurrentItinerary = prompt.contains("modifica", ignoreCase = true) ||
@@ -34,6 +34,8 @@ class ChatRepository(
 
                 val enhancedPrompt = """
                 $prompt
+                
+                Crea un plan de viaje para la ciudad de $city con exactamente $days días, y las preferencias de viaje: $moods.toSingleString().
                 
                 Por favor, responde SOLAMENTE con un objeto JSON que siga EXACTAMENTE esta estructura. Ejemplo:
                 {
@@ -101,7 +103,7 @@ class ChatRepository(
     private var customSystemPrompt = """
     Eres Dora, un asistente de viaje que ayuda a los usuarios con sus planes 
     de viaje. El usuario tiene un itinerario planificado y puede hacerte 
-    preguntas o pedirte modificaciones sobre el mismo.
+    preguntas o pedirte modificaciones sobre el mismo. Solamente habla en espanol y crea los itinerarios en espanol.
     
     Responde de manera útil, amable y concisa.
 """.trimIndent()
@@ -110,7 +112,7 @@ class ChatRepository(
         customSystemPrompt = prompt
     }
 
-    suspend fun fetchChatResponse(message: String, previousMessages: List<Message>): String =
+    suspend fun fetchChatResponse(message: String, previousMessages: List<Message>, currentItinerary: Itinerary?): String =
         withContext(Dispatchers.IO) {
             try {
                 // Konversationsverlauf formatieren
@@ -119,8 +121,24 @@ class ChatRepository(
                     else "Asistente: ${msg.content}"
                 }
 
+                val itineraryContext = currentItinerary?.let {
+                            """
+                    PLAN DE VIAJE ACTUAL:
+                    Ciudad: ${it.city}
+                    Días totales: ${it.days.size}
+                    ${it.days.joinToString("\n\n") { day ->
+                                "DÍA ${day.day}:\n" + day.events.joinToString("\n") { event ->
+                                    "- ${event.time}: ${event.activity} en ${event.location}"
+                                }
+                            }}
+                    """
+                } ?: "No hay plan de viaje actual."
+
+
                 val fullPrompt = """
                 $customSystemPrompt
+                
+                $itineraryContext
                 
                 $conversationHistory
                 

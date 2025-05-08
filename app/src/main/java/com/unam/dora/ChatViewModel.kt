@@ -80,7 +80,9 @@ class ChatViewModel @Inject constructor(
             repository.insertMessage(Message(sender = Sender.USER, content = prompt))
 
             // 2️⃣ Fetch structured itinerary from API
-            val rawItinerary: Itinerary = repository.fetchItinerary(prompt)
+            val rawItinerary: Itinerary = repository.fetchItinerary(prompt,
+                tripCity, tripDays, tripMoods
+            )
             _itinerary.value = rawItinerary
 
             // 3️⃣ Persist a human-readable summary as assistant message
@@ -146,12 +148,26 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             // Aktuelle Reisedaten abrufen
             val currentItinerary = _itinerary.value ?: return@launch
+            val currentDays = tripDays
+
+            // Detaillierten aktuellen Plan im Prompt einschließen
+            val currentPlanDetails = currentItinerary.days.joinToString("\n\n") { dayPlan ->
+                "DIA ${dayPlan.day}:\n" + dayPlan.events.joinToString("\n") { event ->
+                    "[${event.time}] ${event.activity} en ${event.location}"
+                }
+            }
 
             // Anfrage erstellen
             val prompt = """
-            Modifica mi itinerario para el día $day en ${currentItinerary.city} 
+            
+            Aqui está el itinerario actual para la ciudad ${currentItinerary.city} con $tripDays días:
+                
+            $currentPlanDetails
+                
+            Por favor, solamente modifica el itinerario para el día $day en ${currentItinerary.city} 
+            con exactamente $currentDays días en total. Solo cambia el dia $day y manten los otros iguales. 
             para incluir más actividades de tipo "$mood".
-            Mantén el mismo formato JSON y la misma estructura de datos.
+            Mantén el mismo formato JSON válido y la misma estructura de datos y responde UNICAMENTE con el JSON.
         """.trimIndent()
 
             // Benutzer-Nachricht einfügen
@@ -160,7 +176,9 @@ class ChatViewModel @Inject constructor(
 
             try {
                 // Aktualisiertes Itinerar abrufen
-                val updatedItinerary = repository.fetchItinerary(prompt)
+                val updatedItinerary = repository.fetchItinerary(prompt,
+                    currentItinerary.city, currentDays, tripMoods
+                )
                 _itinerary.value = updatedItinerary
 
                 // Zusammenfassung der Änderungen
@@ -193,6 +211,9 @@ class ChatViewModel @Inject constructor(
             val userMsg = Message(sender = Sender.USER, content = text)
             repository.insertMessage(userMsg)
 
+            val currentItinerary = _itinerary.value
+            val currentDays = tripDays
+
             // Vorherige Nachrichten für Kontext
             val previousMessages = messages.value.takeLast(6)
 
@@ -202,7 +223,7 @@ class ChatViewModel @Inject constructor(
             if (isItineraryUpdate) {
                 try {
                     // Wenn es sich um eine Planänderung handelt, aktualisieren wir den Plan
-                    val updatedItinerary = repository.fetchItinerary(text)
+                    val updatedItinerary = repository.fetchItinerary(text, tripCity, currentDays, tripMoods)
                     _itinerary.value = updatedItinerary
 
                     // Änderungsbenachrichtigung
@@ -225,7 +246,7 @@ class ChatViewModel @Inject constructor(
                 }
             } else {
                 // Normale Frage - normale Antwort zurückgeben
-                val responseText = repository.fetchChatResponse(text, previousMessages)
+                val responseText = repository.fetchChatResponse(text, previousMessages, currentItinerary)
                 val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText)
                 repository.insertMessage(assistantMsg)
             }
