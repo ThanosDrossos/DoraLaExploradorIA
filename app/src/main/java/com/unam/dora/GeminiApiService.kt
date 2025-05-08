@@ -8,13 +8,18 @@ import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
 
-// Replace base URL with actual Gemini endpoint
 interface GeminiApiService {
     @POST("/v1beta/models/gemini-2.0-flash:generateContent")
     @Headers("Content-Type: application/json")
     suspend fun generateItinerary(
         @Body request: GeminiRequest
     ): GeminiResponse<Itinerary>
+
+    @POST("/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent")
+    @Headers("Content-Type: application/json")
+    suspend fun generateImage(
+        @Body request: GeminiRequest
+    ): GeminiImageResponse
 }
 
 @Serializable
@@ -37,7 +42,9 @@ data class Part(
 data class GenerationConfig(
     val temperature: Double = 0.7,
     @SerialName("response_mime_type")
-    val responseMimeType: String = "application/json"
+    val responseMimeType: String = "application/json",
+    @SerialName("responseModalities")
+    val responseModalities: List<String>? = null
 )
 
 @Serializable
@@ -49,3 +56,35 @@ data class GeminiResponse<T>(
 data class Candidate(
     val content: Content
 )
+
+// Für die Bildgenerierung
+@Serializable
+data class GeminiImageResponse(
+    val candidates: List<ImageCandidate> = emptyList()
+)
+
+@Serializable
+data class ImageCandidate(
+    val content: ImageContent
+)
+
+@Serializable
+data class ImageContent(
+    val parts: List<ImagePart>
+)
+
+@Serializable
+data class ImagePart(
+    val image: String? = null,
+    val text: String? = null,
+    @SerialName("inlineData")
+    val inlineData: InlineData? = null
+)
+
+@Serializable
+data class InlineData(
+    @SerialName("mimeType")
+    val mimeType: String,
+    val data: String
+)
+

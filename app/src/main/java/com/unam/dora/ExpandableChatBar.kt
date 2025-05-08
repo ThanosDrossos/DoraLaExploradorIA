@@ -34,7 +34,7 @@ fun ExpandableChatBar(
     var inputText by remember { mutableStateOf("") }
 
     val moodOptions = listOf(
-        "😊 Relax" to "relaxation",
+        "😊 Relajación" to "relaxation",
         "🎨 Arte" to "art",
         "🍕 Comida" to "food",
         "🏛️ Historia" to "history",

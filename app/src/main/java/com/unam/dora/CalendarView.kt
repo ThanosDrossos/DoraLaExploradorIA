@@ -5,6 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,7 +24,9 @@ import java.time.format.DateTimeFormatter
 fun CalendarView(
     itinerary: Itinerary?,
     currentDay: Int = 1,
-    onDaySelected: (Int) -> Unit
+    onDaySelected: (Int) -> Unit,
+    onEventRatingChanged: (Int, EventRating) -> Unit,
+    onEventClicked: (Event) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -70,14 +76,18 @@ fun CalendarView(
             // Aktivitäten des ausgewählten Tages
             val selectedDay = itinerary.days.find { it.day == currentDay }
             selectedDay?.let { dayPlan ->
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(dayPlan.events) { event ->
-                        EventCard(event = event)
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(150.dp))
+                LazyColumn {
+                    items(dayPlan.events.size) { index ->
+                        EventCard(
+                            event = dayPlan.events[index],
+                            onRatingChanged = { rating ->
+                                onEventRatingChanged(index, rating)
+                            },
+                            onEventClicked = {
+                                onEventClicked(dayPlan.events[index])
+                            },
+                            modifier = Modifier.padding(8.dp)
+                        )
                     }
                 }
             }
@@ -115,34 +125,54 @@ fun CalendarView(
 }
 
 @Composable
-fun EventCard(event: Event) {
+fun EventCard(
+    event: Event,
+    onRatingChanged: (EventRating) -> Unit,
+    onEventClicked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
+            .clickable { onEventClicked() },
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = event.time,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = event.location,
-                    style = MaterialTheme.typography.titleMedium
-                )
+            // Bestehender Event-Content
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = event.time, style = MaterialTheme.typography.bodyMedium)
+                Text(text = event.location, style = MaterialTheme.typography.titleMedium)
+                Text(text = event.activity, style = MaterialTheme.typography.bodyLarge)
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = event.activity,
-                style = MaterialTheme.typography.bodyLarge
-            )
+
+            // Neue Rating-Icons
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { onRatingChanged(EventRating.LIKED) }) {
+                    Icon(
+                        imageVector = if (event.rating == EventRating.LIKED)
+                            Icons.Filled.CheckCircle
+                        else
+                            Icons.Outlined.AddCircle,
+                        contentDescription = "Me gusta",
+                        tint = if (event.rating == EventRating.LIKED)
+                            Color.Green
+                        else
+                            Color.Gray
+                    )
+                }
+                IconButton(onClick = { onRatingChanged(EventRating.DISLIKED) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Clear,
+                        contentDescription = "No me gusta",
+                        tint = if (event.rating == EventRating.DISLIKED)
+                            Color.Red
+                        else
+                            Color.Gray
+                    )
+                }
+            }
         }
     }
 }

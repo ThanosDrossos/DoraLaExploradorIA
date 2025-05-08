@@ -20,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.unam.dora.ui.theme.ThemeDark
 import androidx.compose.runtime.*
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -69,10 +71,34 @@ fun TravelAppNavGraph() {
                 )
             }
             composable("dashboard") {
-                DashboardScreen(viewModel = sharedViewModel)
+                DashboardScreen(
+                    viewModel = sharedViewModel,
+                    onNavigateToEventDetails = { event ->
+                        // Event-ID als Navigation-Parameter übergeben
+                        navController.navigate("event_details/${event.location}")
+                    }
+                )
             }
             composable("chat") {
                 ConversationScreen(vm = sharedViewModel)
+            }
+            composable(
+                route = "event_details/{location}",
+                arguments = listOf(navArgument("location") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val location = backStackEntry.arguments?.getString("location") ?: ""
+                // Das ausgewählte Event finden
+                val selectedEvent = remember(location) {
+                    sharedViewModel.itinerary.value?.days?.flatMap { it.events }
+                        ?.find { it.location == location }
+                }
+                // EventDetailScreen anzeigen
+                selectedEvent?.let {
+                    EventDetailScreen(
+                        event = it,
+                        onBackPressed = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

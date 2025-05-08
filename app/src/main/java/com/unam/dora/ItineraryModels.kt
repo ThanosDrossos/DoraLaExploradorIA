@@ -21,11 +21,20 @@ data class DayPlan(
         get() = _events ?: _activities ?: emptyList()
 }
 
+enum class EventRating {
+    NEUTRAL,
+    LIKED,
+    DISLIKED
+}
 @Serializable
 data class Event(
-    val time: String,      // e.g., "09:00"
+    val time: String,
     val location: String,
-    val activity: String
+    val activity: String,
+    val rating: EventRating = EventRating.NEUTRAL,
+    val description: String = "",           // Ausführliche Beschreibung
+    val visitorInfo: String = "",           // Öffnungszeiten, Kosten, etc.
+    val imagePath: String? = null           // Pfad zum lokal gespeicherten Bild
 )
 
 // Optional: a scheduled event with actual timestamp for internal use
