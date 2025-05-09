@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -75,11 +77,14 @@ fun EventDetailScreen(
             )
         }
     ) { padding ->
+        val scrollState = rememberScrollState()
+        
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Bild laden (mit Fehlerbehandlung)
@@ -111,7 +116,7 @@ fun EventDetailScreen(
                     }
                 } else {
                     Log.d("EventDetailScreen", "No image path available")
-                    Text("Kein Bild verfügbar")
+                    Text("No hay foto")
                 }
             }
 
@@ -122,27 +127,27 @@ fun EventDetailScreen(
 
             // Zeit anzeigen
             Text(
-                text = "Zeit: ${currentEvent.time}",
+                text = "Hora: ${currentEvent.time}",
                 style = MaterialTheme.typography.bodyLarge
             )
 
             // Beschreibung mit Neuladen-Funktion
             if (currentEvent.description.isNotBlank()) {
                 Text(
-                    text = "Beschreibung",
+                    text = "Descripción",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(currentEvent.description)
             } else if (!isLoading) {
                 Button(onClick = { viewModel.loadEventDetailsIfMissing(currentEvent) }) {
-                    Text("Beschreibung laden")
+                    Text("Cargar detalles")
                 }
             }
 
             // Besucherinfo mit Neuladen-Funktion
             if (currentEvent.visitorInfo.isNotBlank()) {
                 Text(
-                    text = "Besucherinformation",
+                    text = "Información para visitantes",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(currentEvent.visitorInfo)

@@ -44,7 +44,7 @@ fun FormScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Plan Your Trip", style = MaterialTheme.typography.headlineSmall)
+        Text("Planifica tu viaje", style = MaterialTheme.typography.headlineSmall)
 
         OutlinedTextField(
             value = city,
@@ -58,7 +58,7 @@ fun FormScreen(
         )
 
         Column {
-            Text("Duration: ${days.toInt()} days")
+            Text("Duración: ${days.toInt()} days")
             Slider(
                 value = days,
                 onValueChange = { days = it.coerceIn(1f, 14f) },
@@ -68,7 +68,7 @@ fun FormScreen(
             )
         }
 
-        Text("Select your interests:")
+        Text("Seleccionar intereses:")
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(moodOptions.size) { idx ->
                 val (displayText, apiValue) = moodOptions[idx]
