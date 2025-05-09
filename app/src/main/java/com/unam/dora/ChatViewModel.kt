@@ -108,16 +108,19 @@ class ChatViewModel @Inject constructor(
                         // Bild von Wikipedia holen und speichern
                         Log.d("ChatViewModel", "Lade Bild für: ${event.location}")
                         val filename = "event_${event.location.replace(" ", "_")}.jpg"
-                        val savedPath = ImageCrawlHelper.getFirstWikipediaImage(event.location)?.let { url ->
-                            Log.d("ChatViewModel", "Wikipedia URL gefunden: $url")
-                            ImageCrawlHelper.fetchAndSaveImage(url, getApplication(), filename)
-                        }
+
+                        val imagePath = ImageCrawlHelper.getImage(
+                            event.location,
+                            currentItinerary.city,
+                            filename,
+                            getApplication()
+                        )
 
                         // Event mit den zusätzlichen Informationen aktualisieren
                         val updatedEvent = event.copy(
                             description = details.description,
                             visitorInfo = details.visitorInfo,
-                            imagePath = savedPath
+                            imagePath = imagePath
                         )
 
                         // _selectedEvent aktualisieren wenn nötig
@@ -151,56 +154,6 @@ class ChatViewModel @Inject constructor(
             }
         }
     }
-
-/**
-    private suspend fun generateEventDetails(itinerary: Itinerary): Itinerary {
-        return withContext(Dispatchers.IO) {
-            val updatedDays = itinerary.days.map { day ->
-                val updatedEvents = day.events.map { event ->
-                    Log.d("ChatViewModel", "Generiere Details für Event: $event")
-                    try {
-                        // Details und Besucherinformationen generieren
-                        val details = repository.fetchEventDetails(
-                            event.location,
-                            event.activity,
-                            itinerary.city
-                        )
-
-                        // Bild von Wikipedia holen und speichern
-                        Log.d("ChatViewModel", "Lade Bild für: ${event.location}")
-                        val filename = "event_${event.location.replace(" ", "_")}.jpg"
-                        val savedPath = ImageCrawlHelper.getFirstWikipediaImage(event.location)?.let { url ->
-                            Log.d("ChatViewModel", "Wikipedia URL gefunden: $url")
-                            ImageCrawlHelper.fetchAndSaveImage(url, getApplication(), filename)
-                        }
-
-                        // Event mit den zusätzlichen Informationen aktualisieren
-                        val updatedEvent = event.copy(
-                            description = details.description,
-                            visitorInfo = details.visitorInfo,
-                            imagePath = savedPath
-                        )
-
-                        // _selectedEvent aktualisieren wenn nötig
-                        if (_selectedEvent.value?.location == event.location &&
-                            _selectedEvent.value?.activity == event.activity) {
-                            _selectedEvent.value = updatedEvent
-                        }
-
-                        updatedEvent
-                    } catch (e: Exception) {
-                        Log.e("ChatViewModel", "Fehler bei Event-Details: ${e.message}")
-                        event // Bei Fehler ursprüngliches Event zurückgeben
-                    }
-                }
-                day.copy(_events = updatedEvents)
-            }
-
-            itinerary.copy(days = updatedDays)
-        }
-    }
-**/
-
 
     private suspend fun generateAndSaveImage(
         location: String,

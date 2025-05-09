@@ -104,5 +104,6 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("org.jsoup:jsoup:1.15.4")
 
 }
