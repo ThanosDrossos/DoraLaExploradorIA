@@ -409,7 +409,7 @@ class ChatViewModel @Inject constructor(
             } else {
                 // Normale Frage - normale Antwort zurückgeben
                 val responseText = repository.fetchChatResponse(text, previousMessages, currentItinerary)
-                val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText)
+                val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText.toString())
                 repository.insertMessage(assistantMsg)
             }
         }
