@@ -1,5 +1,6 @@
 package com.unam.dora
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,30 +40,35 @@ fun EventDetailScreen(
     onBackPressed: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
-    // Zustand für das Nachladen von Details
     var isLoading by remember { mutableStateOf(false) }
-
-    val currentItinerary by viewModel.itinerary.collectAsState()
-
+    val selectedEvent by viewModel.selectedEvent.collectAsState()
     var currentEvent by remember { mutableStateOf(event) }
 
-    // Auf fehlende Details prüfen und ggf. nachladen
-    LaunchedEffect(currentItinerary) {
-        val updatedEvent = currentItinerary?.days?.flatMap { it.events }
-            ?.find { it.location == event.location && it.activity == event.activity }
-
-        updatedEvent?.let {
-            currentEvent = it
+    // Details nachladen
+    LaunchedEffect(Unit) {
+        Log.d("EventDetailScreen", "Initial event: ${event.imagePath}")
+        Log.d("EventDetailScreen", "Initial selectedEvent: ${selectedEvent?.imagePath}")
+        Log.d("EventDetailScreen", "Checking if details need to be loaded...")
+        if (currentEvent.description.isBlank() || currentEvent.visitorInfo.isBlank() ||
+            currentEvent.imagePath.isNullOrBlank()
+        ) {
+            isLoading = true
+            Log.d("EventDetailScreen", "Loading details for event: ${currentEvent.location}")
+            //viewModel.loadEventDetailsIfMissing(event) // Hier event statt currentEvent verwenden
+            delay(300)
+            isLoading = false
         }
     }
 
-    // Details bei Bedarf nachladen
-    LaunchedEffect(currentEvent) {
-        if (currentEvent.description.isBlank() || currentEvent.visitorInfo.isBlank() ||
-            currentEvent.imagePath.isNullOrBlank()) {
+    // Details nachladen - auf event-Parameter reagieren
+    LaunchedEffect(event) {  // Änderung hier: Unit -> event
+        Log.d("EventDetailScreen", "Event changed, checking details for: ${event}")
+        if (event.description.isBlank() || event.visitorInfo.isBlank() ||
+            event.imagePath.isNullOrBlank()) {
             isLoading = true
-            viewModel.loadEventDetailsIfMissing(currentEvent)
-            delay(300) // Kurze Verzögerung für Ladeindikator
+            Log.d("EventDetailScreen", "Loading details for event: ${event.location}")
+            //viewModel.loadEventDetailsIfMissing(event)
+            delay(300)
             isLoading = false
         }
     }
@@ -70,7 +76,7 @@ fun EventDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(event.location) },
+                title = { Text(currentEvent.location) },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -96,13 +102,14 @@ fun EventDetailScreen(
             ) {
                 if (isLoading) {
                     CircularProgressIndicator()
-                } else if (event.imagePath != null) {
-                    event.imagePath?.let { path ->
+                } else if (currentEvent.imagePath != null) {
+                    Log.d("EventDetailScreen", "Image path for rendering: ${currentEvent.imagePath}")
+                    currentEvent.imagePath?.let { path ->
                         val file = File(path)
                         if (file.exists()) {
                             AsyncImage(
                                 model = file,
-                                contentDescription = event.activity,
+                                contentDescription = currentEvent.activity,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -112,41 +119,42 @@ fun EventDetailScreen(
                         }
                     }
                 } else {
+                    Log.d("EventDetailScreen", "No image path available")
                     Text("Kein Bild verfügbar")
                 }
             }
 
             Text(
-                text = event.activity,
+                text = currentEvent.activity,
                 style = MaterialTheme.typography.headlineSmall
             )
 
             // Zeit anzeigen
             Text(
-                text = "Zeit: ${event.time}",
+                text = "Zeit: ${currentEvent.time}",
                 style = MaterialTheme.typography.bodyLarge
             )
 
             // Beschreibung mit Neuladen-Funktion
-            if (event.description.isNotBlank()) {
+            if (currentEvent.description.isNotBlank()) {
                 Text(
                     text = "Beschreibung",
                     style = MaterialTheme.typography.titleMedium
                 )
-                Text(event.description)
+                Text(currentEvent.description)
             } else if (!isLoading) {
-                Button(onClick = { viewModel.loadEventDetailsIfMissing(event) }) {
+                Button(onClick = { viewModel.loadEventDetailsIfMissing(currentEvent) }) {
                     Text("Beschreibung laden")
                 }
             }
 
             // Besucherinfo mit Neuladen-Funktion
-            if (event.visitorInfo.isNotBlank()) {
+            if (currentEvent.visitorInfo.isNotBlank()) {
                 Text(
                     text = "Besucherinformation",
                     style = MaterialTheme.typography.titleMedium
                 )
-                Text(event.visitorInfo)
+                Text(currentEvent.visitorInfo)
             }
         }
     }

@@ -74,10 +74,12 @@ class ChatViewModel @Inject constructor(
                 repository.insertMessage(Message(sender = Sender.ASSISTANT, content = summary))
 
                 // Generiere Details für alle Events
-                generateEventDetails(rawItinerary)
+                var updatedItinerary = generateEventDetails(rawItinerary)
+                Log.d("ChatViewModel", "Itinerary mit Details: $updatedItinerary")
+                _itinerary.value = updatedItinerary
 
                 // Erstelle Schedule
-                val events = buildSchedule(rawItinerary)
+                val events = buildSchedule(updatedItinerary)
                 _schedule.value = events
 
             } catch (e: Exception) {
@@ -86,10 +88,11 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateEventDetails(itinerary: Itinerary) {
-        withContext(Dispatchers.IO) {
-            itinerary.days.forEach { day ->
-                day.events.forEachIndexed { index, event ->
+    private suspend fun generateEventDetails(itinerary: Itinerary): Itinerary {
+        return withContext(Dispatchers.IO) {
+            val updatedDays = itinerary.days.map { day ->
+                val updatedEvents = day.events.map { event ->
+                    Log.d("ChatViewModel", "Generiere Details für Event: $event")
                     try {
                         // Details und Besucherinformationen generieren
                         val details = repository.fetchEventDetails(
@@ -98,21 +101,86 @@ class ChatViewModel @Inject constructor(
                             itinerary.city
                         )
 
-                        // Bild für das Event generieren
-                        val filename = "day${day.day}_event${index}_${System.currentTimeMillis()}.jpg"
-                        val imagePath = generateAndSaveImage(
-                            event.location,
-                            event.activity,
-                            itinerary.city,
-                            filename
-                        )
+                        // Bild von Wikipedia holen und speichern
+                        Log.d("ChatViewModel", "Lade Bild für: ${event.location}")
+                        val filename = "event_${event.location.replace(" ", "_")}.jpg"
+                        val savedPath = ImageCrawlHelper.getFirstWikipediaImage(event.location)?.let { url ->
+                            Log.d("ChatViewModel", "Wikipedia URL gefunden: $url")
+                            ImageCrawlHelper.fetchAndSaveImage(url, getApplication(), filename)
+                        }
 
                         // Event mit den zusätzlichen Informationen aktualisieren
                         val updatedEvent = event.copy(
                             description = details.description,
                             visitorInfo = details.visitorInfo,
-                            imagePath = imagePath
+                            imagePath = savedPath
                         )
+
+                        // _selectedEvent aktualisieren wenn nötig
+                        if (_selectedEvent.value?.location == event.location &&
+                            _selectedEvent.value?.activity == event.activity) {
+                            _selectedEvent.value = updatedEvent
+                        }
+
+                        updatedEvent
+                    } catch (e: Exception) {
+                        Log.e("ChatViewModel", "Fehler bei Event-Details: ${e.message}")
+                        event // Bei Fehler ursprüngliches Event zurückgeben
+                    }
+                }
+                day.copy(_events = updatedEvents)
+            }
+
+            itinerary.copy(days = updatedDays)
+        }
+    }
+
+    /**
+    private suspend fun generateEventDetails(itinerary: Itinerary) {
+        withContext(Dispatchers.IO) {
+            itinerary.days.forEach { day ->
+                day.events.forEachIndexed { index, event ->
+                    Log.d("ChatViewModel", "Generiere Details für Event: $event")
+                    try {
+                        // Details und Besucherinformationen generieren
+                        val details = repository.fetchEventDetails(
+                            event.location,
+                            event.activity,
+                            itinerary.city
+                        )
+
+                        // Bild von Wikipedia holen und speichern
+                        Log.d("A", "Now fetching image")
+                        var savedPath: String? = null
+                        val filename = "event_${event.location.replace(" ", "_")}.jpg"
+                        val imagePath = ImageCrawlHelper.getFirstWikipediaImage(event.location)?.let { url ->
+                            Log.d("ChatViewModel", "Wikipedia URL gefunden für ${event.location}: $url")
+                            savedPath = ImageCrawlHelper.fetchAndSaveImage(url, getApplication(), filename)
+                            Log.d("ChatViewModel", "Bild gespeichert unter: $savedPath")
+                            savedPath
+                        } ?: run {
+                            Log.e("ChatViewModel", "Kein Wikipedia-Bild gefunden für: ${event.location}")
+                            null
+                        }
+
+                        // Event mit den zusätzlichen Informationen aktualisieren
+                        val updatedEvent = event.copy(
+                            description = details.description,
+                            visitorInfo = details.visitorInfo,
+                            imagePath = savedPath
+                        )
+
+                        // _selectedEvent aktualisieren, wenn es das aktuelle Event ist
+                        if (_selectedEvent.value?.location == event.location &&
+                            _selectedEvent.value?.activity == event.activity) {
+                            Log.d("ChatViewModel", "Aktualisiere _selectedEvent mit neuen Details")
+                            _selectedEvent.value = updatedEvent
+                        } else {
+                            Log.d("ChatViewModel", "Aktualisiere _selectedEvent nicht, da es nicht übereinstimmt")
+                        }
+
+                        Log.d("ChatViewModel", "Aktualisiertes Event: $updatedEvent")
+                        Log.d("ChatViewModel", "Aktualisiertes Event-Bild: ${updatedEvent.imagePath}")
 
                         // Event im Itinerary aktualisieren
                         val updatedEvents = day.events.toMutableList()
@@ -127,14 +195,23 @@ class ChatViewModel @Inject constructor(
                         if (dayIndex >= 0) {
                             updatedDays[dayIndex] = updatedDay
                             _itinerary.value = itinerary.copy(days = updatedDays)
+                            Log.d("ChatViewModel", "Itinerary aktualisiert mit neuen Event-Details")
+                        } else {
+                            Log.e("ChatViewModel", "Tag nicht gefunden im Itinerary: ${day.day}")
                         }
                     } catch (e: Exception) {
                         Log.e("ChatViewModel", "Fehler beim Generieren von Event-Details: ${e.message}")
                     }
                 }
             }
+            itinerary.days.forEach { day ->
+                day.events.forEachIndexed { index, event ->
+                    Log.d("ChatViewModel", "Fertig mit update von events fuer : $event")
+                }
+            }
         }
     }
+    */
 
     private suspend fun generateAndSaveImage(
         location: String,

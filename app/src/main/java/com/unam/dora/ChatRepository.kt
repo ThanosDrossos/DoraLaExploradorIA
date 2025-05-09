@@ -99,6 +99,8 @@ class ChatRepository(
                 )
             )
 
+            Log.e("ChatRepository", "Using old generateImage function!")
+
             val response = api.generateImage(imageRequest)
             // Annahme: Die Antwort enthält base64-kodierte Bilddaten
 
