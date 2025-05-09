@@ -54,7 +54,16 @@ fun EventDetailScreen(
         ) {
             isLoading = true
             //maybe add after loading here
+            Log.d("EventDetailScreen", "Event details got updated!")
             isLoading = false
+        }
+    }
+
+    LaunchedEffect(selectedEvent) {
+        if (selectedEvent?.location == event.location &&
+            selectedEvent?.activity == event.activity) {
+            currentEvent = selectedEvent!!
+            Log.d("EventDetailScreen", "Event wurde aktualisiert: ${selectedEvent?.imagePath}")
         }
     }
 
@@ -85,7 +94,8 @@ fun EventDetailScreen(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                if (isLoading) {
+                Log.d("EventDetailScreen", "Loading image for event: ${currentEvent}")
+                if (currentEvent?.completelyLoaded == false) {
                     CircularProgressIndicator()
                 } else if (currentEvent.imagePath != null) {
                     Log.d("EventDetailScreen", "Image path for rendering: ${currentEvent.imagePath}")

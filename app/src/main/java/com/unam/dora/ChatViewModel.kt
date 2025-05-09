@@ -120,7 +120,8 @@ class ChatViewModel @Inject constructor(
                         val updatedEvent = event.copy(
                             description = details.description,
                             visitorInfo = details.visitorInfo,
-                            imagePath = imagePath
+                            imagePath = imagePath,
+                            completelyLoaded = true
                         )
 
                         // _selectedEvent aktualisieren wenn nötig

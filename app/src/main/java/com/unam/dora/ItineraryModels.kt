@@ -34,7 +34,8 @@ data class Event(
     val rating: EventRating = EventRating.NEUTRAL,
     val description: String = "",           // Ausführliche Beschreibung
     val visitorInfo: String = "",           // Öffnungszeiten, Kosten, etc.
-    val imagePath: String? = null           // Pfad zum lokal gespeicherten Bild
+    val imagePath: String? = null,           // Pfad zum lokal gespeicherten Bild
+    var completelyLoaded: Boolean = false
 )
 
 // Optional: a scheduled event with actual timestamp for internal use
