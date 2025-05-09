@@ -8,6 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+import kotlin.text.toFloat
+import kotlin.text.toInt
 
 
 @Composable
@@ -58,12 +61,15 @@ fun FormScreen(
         )
 
         Column {
-            Text("Duración: ${days.toInt()} days")
+            Text("Duración: ${days.roundToInt()} days")
             Slider(
                 value = days,
-                onValueChange = { days = it.coerceIn(1f, 14f) },
+                onValueChange = { newValue ->
+                    // Diskretisiere den Wert direkt auf ganze Zahlen
+                    days = newValue.roundToInt().toFloat()
+                },
                 valueRange = 1f..14f,
-                steps = 13,
+                // Entferne steps Parameter, da wir manuell diskretisieren
                 modifier = Modifier.fillMaxWidth()
             )
         }
