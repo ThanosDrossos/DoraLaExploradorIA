@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.AddCircle
@@ -30,8 +31,7 @@ fun CalendarView(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
+            .fillMaxSize()
             .padding(16.dp)
     ) {
         // Überschrift mit Stadt
@@ -76,7 +76,16 @@ fun CalendarView(
             // Aktivitäten des ausgewählten Tages
             val selectedDay = itinerary.days.find { it.day == currentDay }
             selectedDay?.let { dayPlan ->
-                LazyColumn {
+                // Scrollstate für die LazyColumn hinzufügen
+                val listState = rememberLazyListState()
+                
+                // LazyColumn nimmt nur den verfügbaren Platz ein und wird scrollbar
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f) // Wichtig: nimmt verfügbaren Platz ein
+                        .fillMaxWidth()
+                ) {
                     items(dayPlan.events.size) { index ->
                         EventCard(
                             event = dayPlan.events[index],
@@ -95,7 +104,7 @@ fun CalendarView(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .weight(1f) // Nutze verfügbaren Platz
                     .background(MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium),
                 contentAlignment = Alignment.Center
             ) {
