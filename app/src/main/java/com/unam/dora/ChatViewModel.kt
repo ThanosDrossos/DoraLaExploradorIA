@@ -375,6 +375,7 @@ class ChatViewModel @Inject constructor(
 
             val currentItinerary = _itinerary.value
             val currentDays = tripDays
+            val currentCity = tripCity
 
             // Vorherige Nachrichten für Kontext
             val previousMessages = messages.value.takeLast(6)
@@ -384,16 +385,19 @@ class ChatViewModel @Inject constructor(
 
             if (isItineraryUpdate) {
                 try {
-                    // Wenn es sich um eine Planänderung handelt, aktualisieren wir den Plan
-                    val updatedItinerary = repository.fetchItinerary(text, tripCity, currentDays, tripMoods)
-                    _itinerary.value = updatedItinerary
+                    Log.d("ChatViewModel", "Itinerary-Änderung erkannt, verarbeite...")
 
-                    // Änderungsbenachrichtigung
-                    val assistantMsg = Message(
-                        sender = Sender.ASSISTANT,
-                        content = "¡He actualizado tu itinerario según tu solicitud!"
-                    )
-                    repository.insertMessage(assistantMsg)
+                    // Wenn es sich um eine Planänderung handelt, aktualisieren wir den Plan
+                    val updatedItinerary = repository.fetchItinerary(text, currentCity, currentDays, tripMoods)
+
+                    // Debug-Ausgabe für das aktualisierte Itinerary
+                    Log.d("ChatViewModel", "Aktualisiertes Itinerary erhalten: $updatedItinerary")
+
+                    // Speichern des aktualisierten Itineraries
+                    _itinerary.update { updatedItinerary }
+
+                    // Sicherstellen, dass der neue Wert gesetzt wurde
+                    Log.d("ChatViewModel", "Neuer Itinerary-Wert: ${_itinerary.value}")
 
                     // Schedule aktualisieren
                     val events = buildSchedule(updatedItinerary)
