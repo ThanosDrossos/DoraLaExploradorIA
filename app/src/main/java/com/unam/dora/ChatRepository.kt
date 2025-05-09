@@ -203,7 +203,7 @@ class ChatRepository(
         customSystemPrompt = prompt
     }
 
-    suspend fun fetchChatResponse(message: String, previousMessages: List<Message>, currentItinerary: Itinerary?): String =
+    suspend fun fetchChatResponse(message: String, previousMessages: List<Message>, currentItinerary: Itinerary?): Pair<String, Itinerary?> =
         withContext(Dispatchers.IO) {
             try {
                 // Konversationsverlauf formatieren
@@ -268,10 +268,38 @@ class ChatRepository(
                 )
 
                 val response = api.generateItinerary(request)
-                return@withContext response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                val responseText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
                     ?: "Lo siento, no pude procesar tu solicitud en este momento."
+                
+                // Versuchen, JSON aus der Antwort zu extrahieren
+                val jsonPattern = """\{[\s\S]*?"city"[\s\S]*?"days"[\s\S]*?\}""".toRegex()
+                val jsonMatch = jsonPattern.find(responseText)
+                
+                if (jsonMatch != null) {
+                    try {
+                        val jsonText = jsonMatch.value
+                        Log.d("ChatRepository", "Found JSON in response: $jsonText")
+                        
+                        // JSON in ein Itinerary-Objekt parsen
+                        val updatedItinerary = kotlinx.serialization.json.Json {
+                            ignoreUnknownKeys = true
+                            isLenient = true
+                        }.decodeFromString<Itinerary>(jsonText)
+                        
+                        // Text ohne JSON extrahieren für die Anzeige
+                        val displayText = responseText.replace(jsonMatch.value, "")
+                            .trim()
+                            .ifEmpty { "He actualizado tu itinerario según tu solicitud." }
+                        
+                        return@withContext Pair(displayText, updatedItinerary)
+                    } catch (e: Exception) {
+                        Log.e("ChatRepository", "Error parsing JSON from response: ${e.message}", e)
+                    }
+                }
+                
+                return@withContext Pair(responseText, null)
             } catch (e: Exception) {
-                return@withContext "Error al procesar tu solicitud: ${e.message}"
+                return@withContext Pair("Error al procesar tu solicitud: ${e.message}", null)
             }
         }
 

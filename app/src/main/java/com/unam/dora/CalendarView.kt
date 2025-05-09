@@ -89,7 +89,7 @@ fun CalendarView(
                         start = 0.dp,
                         top = 0.dp,
                         end = 0.dp,
-                        bottom = 100.dp // Ausreichend großer Abstand am unteren Rand
+                        bottom = 200.dp // Ausreichend großer Abstand am unteren Rand
                     )
                 ) {
                     items(dayPlan.events.size) { index ->
