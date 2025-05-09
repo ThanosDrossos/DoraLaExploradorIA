@@ -7,3 +7,4 @@ plugins {
     id("com.google.devtools.ksp") version "2.1.20-1.0.32" apply false
     alias(libs.plugins.kotlin.compose) apply false
 }
+
