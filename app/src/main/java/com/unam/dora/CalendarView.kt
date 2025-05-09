@@ -84,7 +84,13 @@ fun CalendarView(
                     state = listState,
                     modifier = Modifier
                         .weight(1f) // Wichtig: nimmt verfügbaren Platz ein
-                        .fillMaxWidth()
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(
+                        start = 0.dp,
+                        top = 0.dp,
+                        end = 0.dp,
+                        bottom = 100.dp // Ausreichend großer Abstand am unteren Rand
+                    )
                 ) {
                     items(dayPlan.events.size) { index ->
                         EventCard(
