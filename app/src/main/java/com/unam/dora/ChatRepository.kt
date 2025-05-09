@@ -225,16 +225,43 @@ class ChatRepository(
                     """
                 } ?: "No hay plan de viaje actual."
 
+                // Verbesserte Anweisungen für Itinerary-Updates in den Systemprompter einfügen
+                val enhancedSystemPrompt = """
+                $customSystemPrompt
+                
+                INSTRUCCIONES IMPORTANTES: 
+                1. Si el usuario pide modificar el itinerario (añadir días, actividades, etc.), 
+                   responde con el itinerario completo en formato JSON siguiendo exactamente 
+                   esta estructura:
+                   {
+                     "city": "NombreCiudad",
+                     "days": [
+                       {
+                         "day": 1,
+                         "events": [
+                           {
+                             "time": "09:00",
+                             "location": "Lugar",
+                             "activity": "Actividad"
+                           }
+                         ]
+                       }
+                     ]
+                   }
+                
+                2. Si necesitas añadir más días, incluye todos los días (existentes y nuevos).
+                3. Después de proporcionar el JSON, puedes añadir un resumen de los cambios.
+                """
 
                 val fullPrompt = """
-                $customSystemPrompt
+                $enhancedSystemPrompt
                 
                 $itineraryContext
                 
                 $conversationHistory
                 
                 Usuario: $message
-            """.trimIndent()
+                """.trimIndent()
 
                 val request = GeminiRequest(
                     contents = listOf(Content(parts = listOf(Part(text = fullPrompt))))

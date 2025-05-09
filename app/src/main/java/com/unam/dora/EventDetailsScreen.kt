@@ -61,8 +61,12 @@ fun EventDetailScreen(
         }
     }
 
-    LaunchedEffect(currentEvent) {
-        Log.d("EventDetailScreen", "Event wurde aktualisiert: ${currentEvent}")
+    LaunchedEffect(selectedEvent) {
+        if (selectedEvent?.location == event.location &&
+            selectedEvent?.activity == event.activity) {
+            currentEvent = selectedEvent!!
+            Log.d("EventDetailScreen", "Event wurde aktualisiert: ${selectedEvent?.imagePath}")
+        }
     }
 
     Scaffold(
@@ -88,37 +92,35 @@ fun EventDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Bild laden (mit Fehlerbehandlung)
-            if (currentEvent?.completelyLoaded == false || currentEvent.imagePath != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Log.d("EventDetailScreen", "Loading image for event: ${currentEvent}")
-                    if (currentEvent?.completelyLoaded == false) {
-                        CircularProgressIndicator()
-                    } else if (currentEvent.imagePath != null) {
-                        Log.d("EventDetailScreen", "Image path for rendering: ${currentEvent.imagePath}")
-                        currentEvent.imagePath?.let { path ->
-                            val file = File(path)
-                            if (file.exists()) {
-                                AsyncImage(
-                                    model = file,
-                                    contentDescription = currentEvent.activity,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                // Text("Bild konnte nicht geladen werden")
-                                // Hier könnte man auch ein Neuladen auslösen
-                            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Log.d("EventDetailScreen", "Loading image for event: ${currentEvent}")
+                if (currentEvent?.completelyLoaded == false) {
+                    CircularProgressIndicator()
+                } else if (currentEvent.imagePath != null) {
+                    Log.d("EventDetailScreen", "Image path for rendering: ${currentEvent.imagePath}")
+                    currentEvent.imagePath?.let { path ->
+                        val file = File(path)
+                        if (file.exists()) {
+                            AsyncImage(
+                                model = file,
+                                contentDescription = currentEvent.activity,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text("Bild konnte nicht geladen werden")
+                            // Hier könnte man auch ein Neuladen auslösen
                         }
-                    } else {
-                        Log.d("EventDetailScreen", "No image path available")
-                        Text("No hay foto")
                     }
+                } else {
+                    Log.d("EventDetailScreen", "No image path available")
+                    Text("No hay foto")
                 }
             }
 
