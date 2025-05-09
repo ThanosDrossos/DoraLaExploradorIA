@@ -59,12 +59,8 @@ fun EventDetailScreen(
         }
     }
 
-    LaunchedEffect(selectedEvent) {
-        if (selectedEvent?.location == event.location &&
-            selectedEvent?.activity == event.activity) {
-            currentEvent = selectedEvent!!
-            Log.d("EventDetailScreen", "Event wurde aktualisiert: ${selectedEvent?.imagePath}")
-        }
+    LaunchedEffect(currentEvent) {
+        Log.d("EventDetailScreen", "Event wurde aktualisiert: ${currentEvent}")
     }
 
     Scaffold(

@@ -74,8 +74,12 @@ fun TravelAppNavGraph() {
                 DashboardScreen(
                     viewModel = sharedViewModel,
                     onNavigateToEventDetails = { event ->
-                        // Event-ID als Navigation-Parameter übergeben
                         navController.navigate("event_details/${event.location}")
+                    },
+                    onBackPressed = {
+                        navController.navigate("form") {
+                            popUpTo("dashboard") { inclusive = true }
+                        }
                     }
                 )
             }
