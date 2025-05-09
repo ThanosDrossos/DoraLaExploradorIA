@@ -115,7 +115,7 @@ fun EventDetailScreen(
                     }
                 } else {
                     Log.d("EventDetailScreen", "No image path available")
-                    Text("Kein Bild verfügbar")
+                    Text("No hay foto")
                 }
             }
 
@@ -126,27 +126,27 @@ fun EventDetailScreen(
 
             // Zeit anzeigen
             Text(
-                text = "Zeit: ${currentEvent.time}",
+                text = "Hora: ${currentEvent.time}",
                 style = MaterialTheme.typography.bodyLarge
             )
 
             // Beschreibung mit Neuladen-Funktion
             if (currentEvent.description.isNotBlank()) {
                 Text(
-                    text = "Beschreibung",
+                    text = "Descripción",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(currentEvent.description)
             } else if (!isLoading) {
                 Button(onClick = { viewModel.loadEventDetailsIfMissing(currentEvent) }) {
-                    Text("Beschreibung laden")
+                    Text("Cargar detalles")
                 }
             }
 
             // Besucherinfo mit Neuladen-Funktion
             if (currentEvent.visitorInfo.isNotBlank()) {
                 Text(
-                    text = "Besucherinformation",
+                    text = "Información para visitantes",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(currentEvent.visitorInfo)

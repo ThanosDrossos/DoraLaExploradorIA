@@ -326,7 +326,7 @@ class ChatViewModel @Inject constructor(
             
         Por favor, solamente modifica el itinerario para el día $day en ${currentItinerary.city} 
         con exactamente ${currentItinerary.days.size} días en total. Solo cambia el dia $day y manten los otros iguales. 
-        para incluir más actividades de tipo "$mood".
+        para incluir más actividades de tipo "$mood". Responda en espanol.
         Mantén el mismo formato JSON válido y la misma estructura de datos y responde UNICAMENTE con el JSON.
         """.trimIndent()
 

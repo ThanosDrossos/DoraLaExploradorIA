@@ -71,8 +71,8 @@ class ChatRepository(
                     val descPattern = "\"description\"\\s*:\\s*\"([^\"]+)\"".toRegex()
                     val infoPattern = "\"visitorInfo\"\\s*:\\s*\"([^\"]+)\"".toRegex()
 
-                    val description = descPattern.find(jsonText)?.groupValues?.get(1) ?: "Keine Beschreibung verfügbar."
-                    val visitorInfo = infoPattern.find(jsonText)?.groupValues?.get(1) ?: "Keine Besucherinformationen verfügbar."
+                    val description = descPattern.find(jsonText)?.groupValues?.get(1) ?: "No hay descripción disponible."
+                    val visitorInfo = infoPattern.find(jsonText)?.groupValues?.get(1) ?: "No hay infomación de visitantes disponible."
 
                     EventDetails(
                         description = description,
@@ -126,7 +126,7 @@ class ChatRepository(
                 val enhancedPrompt = """
                 $prompt
                 
-                Crea un plan de viaje para la ciudad de $city con exactamente $days días, y las preferencias de viaje: $moods.toSingleString().
+                Crea un plan de viaje para la ciudad de $city con exactamente $days días, y las preferencias de viaje: $moods.toSingleString(). Responde en español.
                 
                 Por favor, responde SOLAMENTE con un objeto JSON que siga EXACTAMENTE esta estructura. Ejemplo:
                 {
@@ -295,7 +295,7 @@ class ChatRepository(
             reemplazando las que no me gustan con nuevas sugerencias. Manten también las actividades neutras si tiene sentido:
             solo quitalas si: son muy similares a las que no me gustan o si ya hay actividades muy similares antes y despues (no quiero comer otra vez despues de comer por ejemplo).
             Mantén la misma estructura de días y el mismo número de eventos por día.
-            Responde ÚNICAMENTE con el JSON actualizado.
+            Responde ÚNICAMENTE con el JSON actualizado en formato válido.
         """.trimIndent()
 
             // API-Aufruf mit dem vorhandenen fetchItinerary
