@@ -53,22 +53,7 @@ fun EventDetailScreen(
             currentEvent.imagePath.isNullOrBlank()
         ) {
             isLoading = true
-            Log.d("EventDetailScreen", "Loading details for event: ${currentEvent.location}")
-            //viewModel.loadEventDetailsIfMissing(event) // Hier event statt currentEvent verwenden
-            delay(300)
-            isLoading = false
-        }
-    }
-
-    // Details nachladen - auf event-Parameter reagieren
-    LaunchedEffect(event) {  // Änderung hier: Unit -> event
-        Log.d("EventDetailScreen", "Event changed, checking details for: ${event}")
-        if (event.description.isBlank() || event.visitorInfo.isBlank() ||
-            event.imagePath.isNullOrBlank()) {
-            isLoading = true
-            Log.d("EventDetailScreen", "Loading details for event: ${event.location}")
-            //viewModel.loadEventDetailsIfMissing(event)
-            delay(300)
+            //maybe add after loading here
             isLoading = false
         }
     }
