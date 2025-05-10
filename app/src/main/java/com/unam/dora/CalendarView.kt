@@ -29,6 +29,9 @@ fun CalendarView(
     onEventRatingChanged: (Int, EventRating) -> Unit,
     onEventClicked: (Event) -> Unit
 ) {
+    // Key für die Recomposition erzwingen, wenn sich der Itinerary ändert
+    val itineraryKey by remember(itinerary) { mutableStateOf(System.currentTimeMillis()) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -41,7 +44,18 @@ fun CalendarView(
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
+
+            // Debug-Info (kann in Produktion entfernt werden)
+            if (BuildConfig.DEBUG) {
+                Text(
+                    text = "Itinerary ID: $itineraryKey",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
         }
+
         if (itinerary?.error != null) {
             Box(
                 modifier = Modifier
@@ -57,52 +71,55 @@ fun CalendarView(
                 )
             }
         } else if (itinerary != null && itinerary.days.isNotEmpty()) {
-            // Tagesauswahl
-            ScrollableTabRow(
-                selectedTabIndex = currentDay - 1,
-                edgePadding = 8.dp
-            ) {
-                itinerary.days.forEach { dayPlan ->
-                    Tab(
-                        selected = dayPlan.day == currentDay,
-                        onClick = { onDaySelected(dayPlan.day) },
-                        text = { Text("Día ${dayPlan.day}") }
-                    )
+            // Tagesauswahl mit key für Recomposition
+            key(itineraryKey) {
+                ScrollableTabRow(
+                    selectedTabIndex = currentDay - 1,
+                    edgePadding = 8.dp
+                ) {
+                    itinerary.days.forEach { dayPlan ->
+                        Tab(
+                            selected = dayPlan.day == currentDay,
+                            onClick = { onDaySelected(dayPlan.day) },
+                            text = { Text("Día ${dayPlan.day}") }
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Aktivitäten des ausgewählten Tages
-            val selectedDay = itinerary.days.find { it.day == currentDay }
-            selectedDay?.let { dayPlan ->
-                // Scrollstate für die LazyColumn hinzufügen
-                val listState = rememberLazyListState()
-                
-                // LazyColumn nimmt nur den verfügbaren Platz ein und wird scrollbar
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .weight(1f) // Wichtig: nimmt verfügbaren Platz ein
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(
-                        start = 0.dp,
-                        top = 0.dp,
-                        end = 0.dp,
-                        bottom = 100.dp // Ausreichend großer Abstand am unteren Rand
-                    )
-                ) {
-                    items(dayPlan.events.size) { index ->
-                        EventCard(
-                            event = dayPlan.events[index],
-                            onRatingChanged = { rating ->
-                                onEventRatingChanged(index, rating)
-                            },
-                            onEventClicked = {
-                                onEventClicked(dayPlan.events[index])
-                            },
-                            modifier = Modifier.padding(8.dp)
+            // Aktivitäten des ausgewählten Tages mit key für Recomposition
+            key(itineraryKey, currentDay) {
+                val selectedDay = itinerary.days.find { it.day == currentDay }
+                selectedDay?.let { dayPlan ->
+                    val listState = rememberLazyListState()
+
+                    // LazyColumn nimmt nur den verfügbaren Platz ein und wird scrollbar
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentPadding = PaddingValues(
+                            start = 0.dp,
+                            top = 0.dp,
+                            end = 0.dp,
+                            bottom = 200.dp
                         )
+                    ) {
+                        items(dayPlan.events.size, key = { index -> "${dayPlan.events[index].location}_${dayPlan.events[index].activity}" }) { index ->
+                            EventCard(
+                                event = dayPlan.events[index],
+                                onRatingChanged = { rating ->
+                                    onEventRatingChanged(index, rating)
+                                },
+                                onEventClicked = {
+                                    onEventClicked(dayPlan.events[index])
+                                },
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -110,7 +127,7 @@ fun CalendarView(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f) // Nutze verfügbaren Platz
+                    .weight(1f)
                     .background(MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium),
                 contentAlignment = Alignment.Center
             ) {
