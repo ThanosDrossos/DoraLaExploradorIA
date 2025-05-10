@@ -164,22 +164,36 @@ fun EventCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
-            .clickable { onEventClicked() },
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (event.completelyLoaded) {
+                    Modifier.clickable { onEventClicked() }
+                } else {
+                    Modifier
+                }
+            ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bestehender Event-Content
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = event.time, style = MaterialTheme.typography.bodyMedium)
                 Text(text = event.location, style = MaterialTheme.typography.titleMedium)
                 Text(text = event.activity, style = MaterialTheme.typography.bodyLarge)
+
+                // Optionaler Ladeindikator
+                if (!event.completelyLoaded) {
+                    Text(
+                        text = "Cargando detalles…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
 
-            // Neue Rating-Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { onRatingChanged(EventRating.LIKED) }) {
                     Icon(
