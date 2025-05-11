@@ -46,7 +46,11 @@ fun DashboardScreen(
 
         topBar = {
             TopAppBar(
-                title = { Text("Tu plan de viaje") },
+                title = { Text(
+                    text = "Tu plan de viaje",
+                    maxLines = 3,
+                    softWrap = true) },
+                //)},
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Default.ArrowBack, "Atrás")
@@ -56,7 +60,7 @@ fun DashboardScreen(
         }
     ) { padding ->
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             CalendarView(
                 itinerary = itinerary,
                 currentDay = selectedDay,
