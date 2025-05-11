@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.google.ai.client.generativeai.BuildConfig
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -47,7 +48,7 @@ fun CalendarView(
             )
 
             // Debug-Info (kann in Produktion entfernt werden)
-            if (BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG && false) { //never print it ;)
                 Text(
                     text = "Itinerary ID: $itineraryKey",
                     style = MaterialTheme.typography.labelSmall,

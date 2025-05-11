@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,9 @@ fun DashboardScreen(
     onNavigateToEventDetails: (Event) -> Unit,
     onBackPressed: () -> Unit
 ) {
+
+    val listState = rememberLazyListState()
+
     val itinerary by viewModel.itinerary.collectAsState()
     val selectedEvent by viewModel.selectedEvent.collectAsState()
     val messages by viewModel.messages.collectAsState()
@@ -38,6 +42,12 @@ fun DashboardScreen(
 
     val showRatingButtons by remember {
         derivedStateOf { viewModel.getHasRatingChangesFlow() }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            // Verhindert das Zurückspringen beim Dispose
+        }
     }
 
     LaunchedEffect(selectedEvent) {
@@ -56,8 +66,6 @@ fun DashboardScreen(
     }
 
     Scaffold(
-
-
         topBar = {
             TopAppBar(
                 title = { Text(
