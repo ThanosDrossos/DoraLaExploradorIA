@@ -76,6 +76,7 @@ class ChatViewModel @Inject constructor(
                 repository.insertMessage(Message(sender = Sender.ASSISTANT, content = summary))
 
                 // Generiere Details für alle Events
+                Log.d("ChatViewModel", "Generiere Event-Details für Reiseplan... Current Itinerary: ${_itinerary.value}")
                 generateEventDetails(_itinerary)
                 Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
                 //_itinerary.value = updatedItinerary
@@ -286,10 +287,10 @@ class ChatViewModel @Inject constructor(
      */
 
     private fun buildItineraryPrompt(): String =
-        "Plan a $tripDays-day trip to $tripCity. Interests: ${tripMoods.joinToString()}. Respond ONLY with JSON matching the Itinerary schema."
+        "Planifica un viaje de $tripDays días a $tripCity. Intereses: ${tripMoods.joinToString()}. Responde ÚNICAMENTE con un JSON que cumpla con el esquema de itinerario."
 
     private fun formatItinerarySummary(itin: Itinerary): String {
-        val sb = StringBuilder("Here's your ${itin.days.size}-day itinerary for ${itin.city}:\n")
+        val sb = StringBuilder("Aquí tienes tu itinerario de ${itin.days.size} días para ${itin.city}:")
         itin.days.forEach { dayPlan ->
             sb.append("Day ${dayPlan.day}:\n")
             dayPlan.events.forEach { evt ->
