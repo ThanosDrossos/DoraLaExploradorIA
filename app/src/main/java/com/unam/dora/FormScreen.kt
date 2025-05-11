@@ -8,11 +8,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import kotlin.collections.remove
+import androidx.compose.ui.text.style.TextAlign
+import kotlin.collections.remove
 import kotlin.math.roundToInt
-import kotlin.text.toFloat
-import kotlin.text.toInt
+import kotlin.text.chunked
+import kotlin.text.forEach
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FormScreen(
     onGenerate: (city: String, days: Int, moods: List<String>) -> Unit
@@ -75,18 +79,40 @@ fun FormScreen(
         }
 
         Text("Seleccionar intereses:")
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(moodOptions.size) { idx ->
-                val (displayText, apiValue) = moodOptions[idx]
-                val isSelected = apiValue in selectedMoods
-                FilterChip(
-                    selected = isSelected,
-                    onClick = {
-                        if (isSelected) selectedMoods.remove(apiValue)
-                        else selectedMoods.add(apiValue)
-                    },
-                    label = { Text(displayText) }
-                )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            moodOptions.chunked(3).forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    rowItems.forEach { (displayText, apiValue) ->
+                        val isSelected = apiValue in selectedMoods
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                if (isSelected) selectedMoods.remove(apiValue)
+                                else selectedMoods.add(apiValue)
+                            },
+                            label = {
+                                Text(
+                                    text = displayText,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 4.dp)
+                        )
+                    }
+                    // Fülle leere Plätze in der letzten Reihe auf
+                    repeat(3 - rowItems.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
 
