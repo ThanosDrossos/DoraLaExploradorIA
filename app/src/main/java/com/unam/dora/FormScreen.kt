@@ -35,13 +35,14 @@ fun FormScreen(
     }
 
     val moodOptions = listOf(
-        "Relaxation 😊" to "relaxation",
-        "Art 🎨" to "art",
-        "Foodie 🍕" to "food",
-        "History 🏛️" to "history",
-        "Beach 🏖️" to "beach",
-        "Nightlife 🎉" to "nightlife"
+        "Relajación 😊" to "relaxation",
+        "Arte 🎨" to "art",
+        "Comida 🍕" to "food",
+        "Historia 🏛️" to "history",
+        "Playa 🏖️" to "beach",
+        "Vida nocturna 🎉" to "nightlife"
     )
+
 
     val selectedMoods = remember { mutableStateListOf<String>() }
 
@@ -56,7 +57,7 @@ fun FormScreen(
         OutlinedTextField(
             value = city,
             onValueChange = { city = it },
-            label = { Text("Destination City") },
+            label = { Text("Ciudad de destino") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
@@ -65,7 +66,7 @@ fun FormScreen(
         )
 
         Column {
-            Text("Duración: ${days.roundToInt()} days")
+            Text("Duración: ${days.roundToInt()} días")
             Slider(
                 value = days,
                 onValueChange = { newValue ->
@@ -125,7 +126,7 @@ fun FormScreen(
             enabled = city.isNotBlank() && selectedMoods.isNotEmpty(),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Generate Plan")
+            Text("Generar Plan")
         }
     }
 }

@@ -31,11 +31,13 @@ fun DashboardScreen(
     var selectedDay by remember { mutableStateOf(1) }
     var chatExpanded by remember { mutableStateOf(false) }
 
-    // Beobachte das ausgewählte Event und navigiere, wenn eines ausgewählt ist
     LaunchedEffect(selectedEvent) {
-        selectedEvent?.let {
-            onNavigateToEventDetails(it)
-            viewModel.clearSelectedEvent()
+        selectedEvent?.let { event ->
+            // Stelle sicher, dass das Event vollständig geladen ist
+            if (event.completelyLoaded) {
+                onNavigateToEventDetails(event)
+                viewModel.clearSelectedEvent()
+            }
         }
     }
 
@@ -44,10 +46,10 @@ fun DashboardScreen(
 
         topBar = {
             TopAppBar(
-                title = { Text("Dein Reiseplan") },
+                title = { Text("Tu plan de viaje") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, "Zurück")
+                        Icon(Icons.Default.ArrowBack, "Atrás")
                     }
                 }
             )
@@ -63,11 +65,12 @@ fun DashboardScreen(
                     viewModel.updateEventRating(selectedDay, eventIndex, rating)
                 },
                 onEventClicked = { event ->
-                    // Hier muss ein Event-Objekt übergeben werden, kein Index
-                    viewModel.showEventDetails(
-                        selectedDay,
-                        itinerary?.days?.find { it.day == selectedDay }?.events?.indexOf(event) ?: 0
-                    )
+                    if (event.completelyLoaded) {
+                        viewModel.showEventDetails(
+                            selectedDay,
+                            itinerary?.days?.find { it.day == selectedDay }?.events?.indexOf(event) ?: 0
+                        )
+                    }
                 }
             )
 
@@ -84,7 +87,7 @@ fun DashboardScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text("Änderungen anwenden")
+                        Text("Aplicar cambios")
                     }
                 }
 
