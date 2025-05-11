@@ -73,7 +73,7 @@ fun FormScreen(
                     // Diskretisiere den Wert direkt auf ganze Zahlen
                     days = newValue.roundToInt().toFloat()
                 },
-                valueRange = 1f..14f,
+                valueRange = 1f..7f,
                 // Entferne steps Parameter, da wir manuell diskretisieren
                 modifier = Modifier.fillMaxWidth()
             )
