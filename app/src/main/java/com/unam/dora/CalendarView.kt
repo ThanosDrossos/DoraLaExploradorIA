@@ -27,7 +27,8 @@ fun CalendarView(
     currentDay: Int = 1,
     onDaySelected: (Int) -> Unit,
     onEventRatingChanged: (Int, EventRating) -> Unit,
-    onEventClicked: (Event) -> Unit
+    onEventClicked: (Event) -> Unit,
+    viewModel: ChatViewModel
 ) {
     // Key für die Recomposition erzwingen, wenn sich der Itinerary ändert
     val itineraryKey by remember(itinerary) { mutableStateOf(System.currentTimeMillis()) }
@@ -117,7 +118,8 @@ fun CalendarView(
                                 onEventClicked = {
                                     onEventClicked(dayPlan.events[index])
                                 },
-                                modifier = Modifier.padding(8.dp)
+                                modifier = Modifier.padding(8.dp),
+                                viewModel = viewModel
                             )
                         }
                     }
@@ -161,7 +163,8 @@ fun EventCard(
     event: Event,
     onRatingChanged: (EventRating) -> Unit,
     onEventClicked: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: ChatViewModel
 ) {
     Card(
         modifier = modifier
@@ -194,31 +197,34 @@ fun EventCard(
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { onRatingChanged(EventRating.LIKED) }) {
-                    Icon(
-                        imageVector = if (event.rating == EventRating.LIKED)
-                            Icons.Filled.CheckCircle
-                        else
-                            Icons.Outlined.AddCircle,
-                        contentDescription = "Me gusta",
-                        tint = if (event.rating == EventRating.LIKED)
-                            Color.Green
-                        else
-                            Color.Gray
-                    )
+            //Rating buttons nur anzeigen wenn das so soll
+            //if (viewModel.shouldShowRatingButtons()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { onRatingChanged(EventRating.LIKED) }) {
+                        Icon(
+                            imageVector = if (event.rating == EventRating.LIKED)
+                                Icons.Filled.CheckCircle
+                            else
+                                Icons.Outlined.AddCircle,
+                            contentDescription = "Me gusta",
+                            tint = if (event.rating == EventRating.LIKED)
+                                Color.Green
+                            else
+                                Color.Gray
+                        )
+                    }
+                    IconButton(onClick = { onRatingChanged(EventRating.DISLIKED) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Clear,
+                            contentDescription = "No me gusta",
+                            tint = if (event.rating == EventRating.DISLIKED)
+                                Color.Red
+                            else
+                                Color.Gray
+                        )
+                    }
                 }
-                IconButton(onClick = { onRatingChanged(EventRating.DISLIKED) }) {
-                    Icon(
-                        imageVector = Icons.Outlined.Clear,
-                        contentDescription = "No me gusta",
-                        tint = if (event.rating == EventRating.DISLIKED)
-                            Color.Red
-                        else
-                            Color.Gray
-                    )
-                }
-            }
+            //}
         }
     }
 }

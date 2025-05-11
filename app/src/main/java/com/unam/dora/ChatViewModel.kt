@@ -5,6 +5,7 @@ import android.app.Application
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.async
@@ -52,6 +53,7 @@ class ChatViewModel @Inject constructor(
 
         if (eventIndex < day.events.size) {
             _selectedEvent.value = day.events[eventIndex]
+            resetRatingChanges()
         }
     }
 
@@ -189,12 +191,53 @@ class ChatViewModel @Inject constructor(
     private val _hasRatingChanges = MutableStateFlow(false)
     val hasRatingChanges: StateFlow<Boolean> = _hasRatingChanges
 
+    fun resetRatingChanges() {
+        _hasRatingChanges.value = false
+
+        var updatedDays = _itinerary.value?.days?.map { dayPlan ->
+            val updatedEvents = dayPlan.events.mapIndexed { index, event ->
+                event.copy(rating = EventRating.NEUTRAL)
+            }
+            dayPlan.copy(_events = updatedEvents)
+        }
+        _itinerary.update { it?.copy(days = updatedDays!!) }
+        Log.d("ChatViewModel", "Rating changes reset")
+    }
+
+    fun shouldShowRatingButtons(): Boolean {
+        return _hasRatingChanges.value
+    }
+
     // Methode zum Aktualisieren der Bewertung
     fun updateEventRating(day: Int, eventIndex: Int, rating: EventRating) {
         val currentItinerary = _itinerary.value ?: return
 
+        /*
+        if (_hasRatingChanges.value == false) {
+            // Alle Events in allen Tagen auf LIKED setzen
+            var updatedDays = currentItinerary.days.map { dayPlan ->
+                val updatedEvents = dayPlan.events.mapIndexed { index, event ->
+                    if (index == eventIndex) event.copy(rating = EventRating.LIKED) else event
+                }
+                dayPlan.copy(_events = updatedEvents)
+            }
+
+            updatedDays = currentItinerary.days.map { dayPlan ->
+                dayPlan.copy(_events = dayPlan.events.map { event ->
+                    event.copy(rating = EventRating.LIKED)
+                })
+            }
+
+            _itinerary.update { it?.copy(days = updatedDays) }
+            _hasRatingChanges.value = true
+
+            //now set all buttons to LIKED
+            Log.d("ChatViewModel", "Click set all to LIKED")
+        }
+
+
         // Erstelle eine neue Itinerary mit der aktualisierten Bewertung
-        val updatedDays = currentItinerary.days.map { dayPlan ->
+        var updatedDays = currentItinerary.days.map { dayPlan ->
             if (dayPlan.day == day) {
                 val updatedEvents = dayPlan.events.mapIndexed { index, event ->
                     if (index == eventIndex) event.copy(rating = rating) else event
@@ -204,9 +247,30 @@ class ChatViewModel @Inject constructor(
                 dayPlan
             }
         }
+        */
 
+        //CHANGE only the element
+        var updatedDays = currentItinerary.days.map { dayPlan ->
+            val updatedEvents = dayPlan.events.mapIndexed { index, event ->
+                if (index == eventIndex)
+                    event.copy(rating = rating)
+                else
+                    if (_hasRatingChanges.value == false) {
+                        Log.d("ChatViewModel", "Click set all to LIKED")
+                        event.copy(rating = EventRating.LIKED)
+                    } else {
+                        event
+                    }
+            }
+            dayPlan.copy(_events = updatedEvents)
+        }
         _itinerary.update { it?.copy(days = updatedDays) }
-        _hasRatingChanges.value = true
+
+        if (_hasRatingChanges.value == false) {
+            _hasRatingChanges.value = true
+        }
+
+        Log.d("ChatViewModel", "Click outside")
     }
 
     // Methode zum Anwenden der Änderungen
@@ -365,6 +429,7 @@ class ChatViewModel @Inject constructor(
                     currentItinerary.days.size,
                     listOf(mood)
                 )
+
                 _itinerary.value = updatedItinerary
 
                 // Zusammenfassung der Änderungen

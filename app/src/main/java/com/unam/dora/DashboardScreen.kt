@@ -54,6 +54,7 @@ fun DashboardScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Default.ArrowBack, "Atrás")
+                        viewModel.resetRatingChanges()
                     }
                 }
             )
@@ -75,7 +76,8 @@ fun DashboardScreen(
                             itinerary?.days?.find { it.day == selectedDay }?.events?.indexOf(event) ?: 0
                         )
                     }
-                }
+                },
+                viewModel = viewModel
             )
 
             // Chat-Komponente
