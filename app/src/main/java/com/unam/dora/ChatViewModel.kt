@@ -231,6 +231,22 @@ class ChatViewModel @Inject constructor(
                 content = "He actualizado tu itinerario según tus preferencias"
             )
             repository.insertMessage(assistantMsg)
+
+            //now load event stuff from AI
+            try {
+                Log.d("ChatViewModel", "Generiere Event-Details für aktualisierten Reiseplan...")
+                // Generiere Details für alle Events
+                generateEventDetails(_itinerary)
+                Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
+                //_itinerary.value = updatedItinerary
+
+                // Erstelle Schedule
+                val events = buildSchedule(_itinerary.value!!)
+                _schedule.value = events
+
+            } catch (e: Exception) {
+                _itinerary.value = Itinerary(tripCity, emptyList(), false, e.message)
+            }
         }
     }
 
