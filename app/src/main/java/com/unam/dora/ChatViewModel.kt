@@ -208,6 +208,10 @@ class ChatViewModel @Inject constructor(
         return _hasRatingChanges.value
     }
 
+    fun getHasRatingChangesFlow(): StateFlow<Boolean> {
+        return _hasRatingChanges
+    }
+
     // Methode zum Aktualisieren der Bewertung
     fun updateEventRating(day: Int, eventIndex: Int, rating: EventRating) {
         val currentItinerary = _itinerary.value ?: return

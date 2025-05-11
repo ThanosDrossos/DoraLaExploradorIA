@@ -1,6 +1,7 @@
 package com.unam.dora
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
@@ -12,7 +13,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.time.LocalDate
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.TopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,8 +31,14 @@ fun DashboardScreen(
     val messages by viewModel.messages.collectAsState()
     val hasRatingChanges by viewModel.hasRatingChanges.collectAsState()
 
+
     var selectedDay by remember { mutableStateOf(1) }
     var chatExpanded by remember { mutableStateOf(false) }
+
+
+    val showRatingButtons by remember {
+        derivedStateOf { viewModel.getHasRatingChangesFlow() }
+    }
 
     LaunchedEffect(selectedEvent) {
         selectedEvent?.let { event ->
@@ -39,6 +48,11 @@ fun DashboardScreen(
                 viewModel.clearSelectedEvent()
             }
         }
+    }
+
+    // BackHandler für den Bearbeitungsmodus
+    BackHandler(enabled = viewModel.shouldShowRatingButtons()) {
+        viewModel.resetRatingChanges()
     }
 
     Scaffold(
@@ -52,9 +66,19 @@ fun DashboardScreen(
                     softWrap = true) },
                 //)},
                 navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, "Atrás")
-                        viewModel.resetRatingChanges()
+
+                    IconButton(onClick = {
+                        if (showRatingButtons.value) {
+                            // Im Bearbeitungsmodus: Änderungen verwerfen
+                            viewModel.resetRatingChanges()
+                        } else {
+                            onBackPressed()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Atrás"
+                        )
                     }
                 }
             )
