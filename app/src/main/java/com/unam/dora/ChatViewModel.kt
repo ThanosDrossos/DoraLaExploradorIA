@@ -436,6 +436,15 @@ class ChatViewModel @Inject constructor(
 
                 _itinerary.value = updatedItinerary
 
+                try {
+                    Log.d("ChatViewModel", "Generiere Event-Details für aktualisierten Reiseplan...")
+                    generateEventDetails(_itinerary)
+                    Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel", "Fehler beim Generieren der Event-Details: ${e.message}")
+                }
+
+
                 // Zusammenfassung der Änderungen
                 val summary = "He actualizado tu itinerario para el día $day con más actividades de $mood."
                 val assistantMsg = Message(sender = Sender.ASSISTANT, content = summary)
@@ -488,8 +497,20 @@ class ChatViewModel @Inject constructor(
                     // Speichern des aktualisierten Itineraries
                     _itinerary.update { updatedItinerary }
 
+                    try {
+                        Log.d("ChatViewModel", "Generiere Event-Details für aktualisierten Reiseplan...")
+                        generateEventDetails(_itinerary)
+                        Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
+                    } catch (e: Exception) {
+                        Log.e("ChatViewModel", "Fehler beim Generieren der Event-Details: ${e.message}")
+                    }
+
                     // Sicherstellen, dass der neue Wert gesetzt wurde
                     Log.d("ChatViewModel", "Neuer Itinerary-Wert: ${_itinerary.value}")
+
+                    val responseText = repository.fetchChatResponse(text, previousMessages, currentItinerary)
+                    val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText.toString())
+                    repository.insertMessage(assistantMsg)
 
                     // Schedule aktualisieren
                     val events = buildSchedule(updatedItinerary)
@@ -517,7 +538,9 @@ class ChatViewModel @Inject constructor(
     private fun determineIfItineraryUpdate(text: String): Boolean {
         val updateKeywords = listOf(
             "cambiar", "cambio", "modifica", "actualiza", "mover", "añadir", "agregar",
-            "quitar", "eliminar", "reemplazar", "reorganizar", "ajustar"
+            "quitar", "eliminar", "reemplazar", "reorganizar", "ajustar", "añade", "agrega",
+            "sustituir", "sustituye", "reorganiza", "ajusta", "modificar", "modifica",
+            "actualizar", "mover", "añadir", "agregar", "quitar", "eliminar", "reemplazar",
         )
 
         return updateKeywords.any { keyword ->

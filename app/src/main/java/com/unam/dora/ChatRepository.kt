@@ -361,4 +361,140 @@ class ChatRepository(
                 emptyList()
             )
         }
+
+
+    suspend fun updateItineraryWithChatRequest(userMessage: String, previousMessages: List<Message>, currentItinerary: Itinerary?): Pair<String, Itinerary?> =
+        withContext(Dispatchers.IO) {
+            try {
+                // Konversationsverlauf formatieren
+                val conversationHistory = previousMessages.takeLast(6).joinToString("\n") { msg ->
+                    if (msg.sender == Sender.USER) "Usuario: ${msg.content}"
+                    else "Asistente: ${msg.content}"
+                }
+
+                // Kontext des aktuellen Itineraries für den Prompt
+                val itineraryContext = currentItinerary?.let {
+                    """
+                PLAN DE VIAJE ACTUAL:
+                Ciudad: ${it.city}
+                Días totales: ${it.days.size}
+                ${it.days.joinToString("\n\n") { day ->
+                        "DÍA ${day.day}:\n" + day.events.joinToString("\n") { event ->
+                            "- ${event.time}: ${event.activity} en ${event.location}"
+                        }
+                    }}
+                """
+                } ?: "No hay plan de viaje actual."
+
+                // Prompt mit klaren Anweisungen für das JSON-Format
+                val enhancedPrompt = """
+            Eres Dora, un asistente de viaje. El usuario quiere modificar su itinerario de viaje.
+            
+            $itineraryContext
+            
+            $conversationHistory
+            
+            Usuario: $userMessage
+            
+            INSTRUCCIONES IMPORTANTES:
+            1. Genera un itinerario completo y actualizado basado en la solicitud del usuario.
+            2. DEBES responder ÚNICAMENTE con un objeto JSON que siga EXACTAMENTE esta estructura:
+            {
+              "city": "NombreCiudad",
+              "days": [
+                {
+                  "day": 1,
+                  "events": [
+                    {
+                      "time": "09:00",
+                      "location": "Lugar",
+                      "activity": "Actividad"
+                    }
+                  ]
+                }
+              ]
+            }
+            3. No incluyas texto explicativo, markdown, comillas de código ni ningún otro contenido.
+            4. El JSON debe ser válido y completo.
+            """.trimIndent()
+
+                val request = GeminiRequest(
+                    contents = listOf(Content(parts = listOf(Part(text = enhancedPrompt))))
+                )
+
+                // API-Aufruf
+                val response = api.generateItinerary(request)
+                val responseText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                    ?: throw Exception("No se recibió una respuesta válida")
+
+                // JSON-Text bereinigen und extrahieren
+                val cleanResponse = responseText
+                    .replace("```json", "")
+                    .replace("```", "")
+                    .trim()
+
+                try {
+                    // Versuchen, das JSON direkt zu parsen
+                    val updatedItinerary = kotlinx.serialization.json.Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                    }.decodeFromString<Itinerary>(cleanResponse)
+
+                    // Erstelle eine Zusammenfassung der Änderungen
+                    val summaryPrompt = """
+                    Basado en este itinerario actualizado:
+                    
+                    $cleanResponse
+                    
+                    Genera un resumen breve (máximo 2 frases) de los cambios realizados. 
+                    Responde ÚNICAMENTE con este resumen, sin JSON ni formateo.
+                """.trimIndent()
+
+                    val summaryRequest = GeminiRequest(
+                        contents = listOf(Content(parts = listOf(Part(text = summaryPrompt))))
+                    )
+
+                    val summaryResponse = api.generateItinerary(summaryRequest)
+                    val summary = summaryResponse.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                        ?: "He actualizado tu itinerario según tu solicitud."
+
+                    return@withContext Pair(summary, updatedItinerary)
+                } catch (e: Exception) {
+                    Log.e("ChatRepository", "Error al parsear el JSON: ${e.message}", e)
+                    // Fallback: Versuchen, in jedem Fall ein gültiges Itinerary zu erstellen
+                    val fallbackRequest = """
+                    Genera un itinerario para ${currentItinerary?.city ?: "el destino solicitado"} 
+                    considerando la solicitud: "$userMessage"
+                    
+                    Responde EXCLUSIVAMENTE con JSON válido siguiendo esta estructura exacta:
+                    {
+                      "city": "NombreCiudad",
+                      "days": [
+                        {
+                          "day": 1,
+                          "events": [
+                            {
+                              "time": "09:00",
+                              "location": "Lugar",
+                              "activity": "Actividad"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                """.trimIndent()
+
+                    // Neuen Versuch starten
+                    return@withContext fetchItinerary(
+                        fallbackRequest,
+                        currentItinerary?.city ?: "",
+                        currentItinerary?.days?.size ?: 3,
+                        emptyList()
+                    ).let { Pair("He creado un nuevo itinerario basado en tu solicitud.", it) }
+                }
+            } catch (e: Exception) {
+                Log.e("ChatRepository", "Error en la solicitud de chat: ${e.message}", e)
+                return@withContext Pair("Lo siento, no pude actualizar el itinerario: ${e.message}", null)
+            }
+        }
 }
