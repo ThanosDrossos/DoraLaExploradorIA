@@ -119,75 +119,78 @@ class ChatRepository(
      */
     suspend fun fetchItinerary(prompt: String, city: String, days: Int, moods: List<String>): Itinerary =
         withContext(Dispatchers.IO) {
-            try {
-                val includeCurrentItinerary = prompt.contains("modifica", ignoreCase = true) ||
-                        prompt.contains("actualiza", ignoreCase = true)
+            withRetry {
+                try {
+                    val includeCurrentItinerary = prompt.contains("modifica", ignoreCase = true) ||
+                            prompt.contains("actualiza", ignoreCase = true)
 
-                val enhancedPrompt = """
-                $prompt
-                
-                Crea un plan de viaje para la ciudad de $city con exactamente $days días, y las preferencias de viaje: $moods.toSingleString(). Responde en español.
-                
-                Por favor, responde SOLAMENTE con un objeto JSON que siga EXACTAMENTE esta estructura. Ejemplo:
-                {
-                  "city": "Madrid",
-                  "days": [
+                    val enhancedPrompt = """
+                    $prompt
+                    
+                    Crea un plan de viaje para la ciudad de $city con exactamente $days días, y las preferencias de viaje: $moods.toSingleString(). Responde en español.
+                    
+                    Por favor, responde SOLAMENTE con un objeto JSON que siga EXACTAMENTE esta estructura. Ejemplo:
                     {
-                      "day": 1,
-                      "events": [
+                      "city": "Madrid",
+                      "days": [
                         {
-                          "time": "09:00",
-                          "location": "Plaza Mayor",
-                          "activity": "Desayuno y paseo"
+                          "day": 1,
+                          "events": [
+                            {
+                              "time": "09:00",
+                              "location": "Plaza Mayor",
+                              "activity": "Desayuno y paseo"
+                            },
+                            {
+                              "time": "12:00",
+                              "location": "Museo del Prado",
+                              "activity": "Visita cultural"
+                            }
+                          ]
                         },
                         {
-                          "time": "12:00",
-                          "location": "Museo del Prado",
-                          "activity": "Visita cultural"
-                        }
-                      ]
-                    },
-                    {
-                      "day": 2,
-                      "events": [
-                        {
-                          "time": "10:00",
-                          "location": "Parque del Retiro",
-                          "activity": "Paseo matutino"
+                          "day": 2,
+                          "events": [
+                            {
+                              "time": "10:00",
+                              "location": "Parque del Retiro",
+                              "activity": "Paseo matutino"
+                            }
+                          ]
                         }
                       ]
                     }
-                  ]
+                    
+                    REQUISITOS OBLIGATORIOS:
+                    1. Responde SOLO con JSON válido, sin formateo Markdown
+                    2. Asegúrate que cada evento tenga exactamente los campos: time, location y activity
+                """.trimIndent()
+
+                    val request = GeminiRequest(
+                        contents = listOf(Content(parts = listOf(Part(text = enhancedPrompt))))
+                    )
+
+                    val response = api.generateItinerary(request)
+
+                    val rawText =
+                        response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                            ?: throw Exception("No se recibió una respuesta válida")
+
+                    val jsonText = rawText
+                        .replace("```json", "")
+                        .replace("```", "")
+                        .trim()
+
+                    kotlinx.serialization.json.Json {
+                        ignoreUnknownKeys = true
+                    }.decodeFromString<Itinerary>(jsonText)
+                } catch (e: Exception) {
+                    Itinerary(
+                        city = "", // Leerer String für city
+                        days = emptyList(), // Leere Liste für days
+                        error = "Error de Red"
+                    )
                 }
-                
-                REQUISITOS OBLIGATORIOS:
-                1. Responde SOLO con JSON válido, sin formateo Markdown
-                2. Asegúrate que cada evento tenga exactamente los campos: time, location y activity
-            """.trimIndent()
-
-                val request = GeminiRequest(
-                    contents = listOf(Content(parts = listOf(Part(text = enhancedPrompt))))
-                )
-
-                val response = api.generateItinerary(request)
-
-                val rawText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                    ?: throw Exception("No se recibió una respuesta válida")
-
-                val jsonText = rawText
-                    .replace("```json", "")
-                    .replace("```", "")
-                    .trim()
-
-                kotlinx.serialization.json.Json {
-                    ignoreUnknownKeys = true
-                }.decodeFromString<Itinerary>(jsonText)
-            } catch (e: Exception) {
-                Itinerary(
-                    city = "", // Leerer String für city
-                    days = emptyList(), // Leere Liste für days
-                    error = "Error de Red"
-                )
             }
         }
 
@@ -249,8 +252,8 @@ class ChatRepository(
                      ]
                    }
                 
-                2. Si necesitas añadir más días, incluye todos los días (existentes y nuevos).
-                3. Después de proporcionar el JSON, puedes añadir un resumen de los cambios.
+                2. Si necesitas añadir más días, incluye todos los días (existentes y nuevos) y responde con un JSON completo.
+                3. Después de proporcionar el JSON completo, puedes añadir un resumen de los cambios.
                 """
 
                 val fullPrompt = """
@@ -497,4 +500,24 @@ class ChatRepository(
                 return@withContext Pair("Lo siento, no pude actualizar el itinerario: ${e.message}", null)
             }
         }
+}
+
+suspend fun <T> withRetry(
+    maxRetries: Int = 3,
+    initialDelayMillis: Long = 1000,
+    block: suspend () -> T
+): T {
+    var currentDelay = initialDelayMillis
+    repeat(maxRetries) { attempt ->
+        try {
+            return block()
+        } catch (e: Exception) {
+            if (attempt == maxRetries - 1) throw e
+
+            Log.w("ChatRepository", "Versuch ${attempt+1} fehlgeschlagen, versuche erneut in $currentDelay ms")
+            kotlinx.coroutines.delay(currentDelay)
+            currentDelay *= 2 // Exponentielles Backoff
+        }
+    }
+    throw IllegalStateException("Dies sollte nie erreicht werden")
 }

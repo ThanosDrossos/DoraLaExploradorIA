@@ -20,6 +20,7 @@ import com.unam.dora.ScheduledEvent
 import com.unam.dora.GeminiApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -97,11 +98,23 @@ class ChatViewModel @Inject constructor(
     private suspend fun generateEventDetails(_itinerary: MutableStateFlow<Itinerary?>) {
         withContext(Dispatchers.IO) {
             val currentItinerary = _itinerary.value ?: return@withContext
-
+            /*
             currentItinerary.days.flatMap { day ->
                 day.events.map { event ->
-                    async {
+                    async {  */
+
+            val semaphore = kotlinx.coroutines.sync.Semaphore(5)
+
+            val deferreds = mutableListOf<kotlinx.coroutines.Deferred<Unit>>()
+
+            for (day in currentItinerary.days) {
+                for (event in day.events) {
+
+                    val deferred = async{
+                        semaphore.acquire()
+
                         try {
+                            delay(50)
                             Log.d("ChatViewModel", "Generiere Details für Event: $event")
 
                             val details = repository.fetchEventDetails(
@@ -158,10 +171,15 @@ class ChatViewModel @Inject constructor(
 
                         } catch (e: Exception) {
                             Log.e("ChatViewModel", "Fehler bei Event-Details: ${e.message}")
+                        } finally {
+                            semaphore.release()
                         }
+                        Unit
                     }
+                    deferreds.add(deferred)
                 }
-            }.awaitAll()
+            }
+            deferreds.awaitAll()
         }
     }
 
