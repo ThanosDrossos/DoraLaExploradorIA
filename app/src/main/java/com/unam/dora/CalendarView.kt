@@ -47,6 +47,7 @@ fun CalendarView(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+
             // Debug-Info (kann in Produktion entfernt werden)
             if (BuildConfig.DEBUG && false) { //never print it ;)
                 Text(

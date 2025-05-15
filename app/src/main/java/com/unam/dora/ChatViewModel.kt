@@ -1,4 +1,3 @@
-// app/src/main/java/com/unam/dora/ChatViewModel.kt
 package com.unam.dora
 
 import android.app.Application
@@ -98,10 +97,6 @@ class ChatViewModel @Inject constructor(
     private suspend fun generateEventDetails(_itinerary: MutableStateFlow<Itinerary?>) {
         withContext(Dispatchers.IO) {
             val currentItinerary = _itinerary.value ?: return@withContext
-            /*
-            currentItinerary.days.flatMap { day ->
-                day.events.map { event ->
-                    async {  */
 
             val semaphore = kotlinx.coroutines.sync.Semaphore(5)
 
@@ -180,29 +175,6 @@ class ChatViewModel @Inject constructor(
                 }
             }
             deferreds.awaitAll()
-        }
-    }
-
-    private suspend fun generateAndSaveImage(
-        location: String,
-        activity: String,
-        city: String,
-        filename: String
-    ): String? {
-        return try {
-            val prompt = "Generate a photorealistic image of $activity at $location in $city. Make it look like a professional travel photograph."
-            val imageData = repository.generateImage(prompt)
-
-            // Bild speichern
-            val file = File(getApplication<Application>().filesDir, filename)
-            FileOutputStream(file).use { it.write(imageData) }
-
-            // Log hinzufügen, um zu überprüfen, ob das Bild gespeichert wurde
-            Log.d("ChatViewModel", "Bild wurde gespeichert: ${file.absolutePath} (${file.length()} bytes)")
-            file.absolutePath
-        } catch (e: Exception) {
-            Log.e("ChatViewModel", "Fehler beim Generieren des Bildes: ${e.message}", e)
-            null
         }
     }
 
@@ -565,72 +537,5 @@ class ChatViewModel @Inject constructor(
             text.contains(keyword, ignoreCase = true)
         }
     }
-    // Nachladen von fehlenden Event-Details und Bildern
-    fun loadEventDetailsIfMissing(event: Event) {
-        viewModelScope.launch {
-            try {
-                val currentItinerary = _itinerary.value ?: return@launch
 
-                // Suchen des Tages und des Event-Index
-                var targetDay: DayPlan? = null
-                var eventIndex = -1
-
-                for (day in currentItinerary.days) {
-                    val index = day.events.indexOfFirst { it.location == event.location && it.activity == event.activity }
-                    if (index != -1) {
-                        targetDay = day
-                        eventIndex = index
-                        break
-                    }
-                }
-
-                if (targetDay == null || eventIndex == -1) return@launch
-
-                // Details generieren, falls fehlend
-                val details = if (event.description.isBlank() || event.visitorInfo.isBlank()) {
-                    repository.fetchEventDetails(event.location, event.activity, currentItinerary.city)
-                } else {
-                    null
-                }
-
-                // Bild generieren, falls fehlend oder Datei nicht existiert
-                val imagePath = if (event.imagePath.isNullOrBlank() || !File(event.imagePath).exists()) {
-                    // Stabilen Dateinamen erstellen (ohne Zeitstempel)
-                    val filename = "event_${event.location.replace(" ", "_")}_${event.activity.replace(" ", "_")}.jpg"
-
-                    generateAndSaveImage(
-                        event.location,
-                        event.activity,
-                        currentItinerary.city,
-                        filename
-                    )
-                } else {
-                    event.imagePath
-                }
-
-                // Event aktualisieren
-                val updatedEvent = event.copy(
-                    description = details?.description ?: event.description,
-                    visitorInfo = details?.visitorInfo ?: event.visitorInfo,
-                    imagePath = imagePath
-                )
-
-                // Im Itinerary aktualisieren
-                val updatedEvents = targetDay.events.toMutableList()
-                updatedEvents[eventIndex] = updatedEvent
-
-                val updatedDay = targetDay.copy(_events = updatedEvents)
-                val updatedDays = currentItinerary.days.toMutableList()
-                val dayIndex = updatedDays.indexOfFirst { it.day == targetDay.day }
-
-                if (dayIndex >= 0) {
-                    updatedDays[dayIndex] = updatedDay
-                    _itinerary.value = currentItinerary.copy(days = updatedDays)
-                }
-
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Fehler beim Nachladen der Event-Details: ${e.message}")
-            }
-        }
-    }
 }
