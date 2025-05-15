@@ -78,7 +78,7 @@ class ChatViewModel @Inject constructor(
                 repository.insertMessage(Message(sender = Sender.ASSISTANT, content = summary))
 
                 // Generiere Details für alle Events
-                Log.d("ChatViewModel", "Generiere Event-Details für Reiseplan... Current Itinerary: ${_itinerary.value}")
+                Log.d("ChatViewModel", "GenerateItineray: Generiere Event-Details für Reiseplan... Current Itinerary: ${_itinerary.value}")
                 generateEventDetails(_itinerary)
                 Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
                 //_itinerary.value = updatedItinerary
@@ -93,85 +93,78 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-
     private suspend fun generateEventDetails(_itinerary: MutableStateFlow<Itinerary?>) {
         withContext(Dispatchers.IO) {
             val currentItinerary = _itinerary.value ?: return@withContext
 
             val semaphore = kotlinx.coroutines.sync.Semaphore(5)
-
             val deferreds = mutableListOf<kotlinx.coroutines.Deferred<Unit>>()
 
             for (day in currentItinerary.days) {
                 for (event in day.events) {
+                    // Prüfe ob Event bereits geladen ist
+                    if (!event.completelyLoaded) {
+                        Log.d("ChatViewModel", "Event nicht geladen, after loading: ${event.location} - ${event.activity}")
+                        val deferred = async {
+                            semaphore.acquire()
+                            try {
+                                delay(50)
+                                Log.d("ChatViewModel", "Generiere Details für Event: $event")
 
-                    val deferred = async{
-                        semaphore.acquire()
+                                val details = repository.fetchEventDetails(
+                                    event.location,
+                                    event.activity,
+                                    currentItinerary.city
+                                )
 
-                        try {
-                            delay(50)
-                            Log.d("ChatViewModel", "Generiere Details für Event: $event")
+                                Log.d("ChatViewModel", "Lade Bild für: ${event.location}")
+                                val filename = "event_${event.location.replace(" ", "_")}.jpg"
 
-                            val details = repository.fetchEventDetails(
-                                event.location,
-                                event.activity,
-                                currentItinerary.city
-                            )
+                                val imagePath = ImageCrawlHelper.getImage(
+                                    event.location,
+                                    currentItinerary.city,
+                                    filename,
+                                    getApplication()
+                                )
 
-                            Log.d("ChatViewModel", "Lade Bild für: ${event.location}")
-                            val filename = "event_${event.location.replace(" ", "_")}.jpg"
+                                val updatedEvent = event.copy(
+                                    description = details.description,
+                                    visitorInfo = details.visitorInfo,
+                                    imagePath = imagePath,
+                                    completelyLoaded = true
+                                )
 
-                            val imagePath = ImageCrawlHelper.getImage(
-                                event.location,
-                                currentItinerary.city,
-                                filename,
-                                getApplication()
-                            )
-
-                            val updatedEvent = event.copy(
-                                description = details.description,
-                                visitorInfo = details.visitorInfo,
-                                imagePath = imagePath,
-                                completelyLoaded = true
-                            )
-
-                            // Itinerary Update
-                            val (currentValue, updatedDays) = synchronized(_itinerary) {
-                                val currentValue = _itinerary.value
-                                val updatedDays = currentValue?.days?.map { d ->
-                                    if (d.day == day.day) {
-                                        d.copy(_events = d.events.map { e ->
-                                            if (e.location == event.location && e.activity == event.activity) {
-                                                updatedEvent
-                                            } else e
-                                        })
-                                    } else d
+                                synchronized(_itinerary) {
+                                    val currentValue = _itinerary.value
+                                    val updatedDays = currentValue?.days?.map { d ->
+                                        if (d.day == day.day) {
+                                            d.copy(_events = d.events.map { e ->
+                                                if (e.location == event.location && e.activity == event.activity) {
+                                                    updatedEvent
+                                                } else e
+                                            })
+                                        } else d
+                                    }
+                                    currentValue?.let { itinerary ->
+                                        _itinerary.value = itinerary.copy(days = updatedDays ?: emptyList())
+                                    }
                                 }
-                                Pair(currentValue, updatedDays)
-                            }
 
-                            // Updates außerhalb des synchronized Blocks
-                            currentValue?.let { itinerary ->
-                                _itinerary.value = itinerary.copy(days = updatedDays ?: emptyList())
-                                Log.d("ChatViewModel", "Event aktualisiert: ${event.location}")
-                            }
+                                if (_selectedEvent.value?.time == updatedEvent.time) {
+                                    _selectedEvent.emit(updatedEvent)
+                                }
 
-                            // Selected Event Update außerhalb des synchronized Blocks
-                            if (_selectedEvent.value?.time == updatedEvent.time) {
-                                _selectedEvent.emit(updatedEvent)
-                                Log.d("ChatViewModel", "Selected Event aktualisiert!: ${_selectedEvent.value}")
-                            } else {
-                                Log.d("ChatViewModel", "Selected Event nicht aktualisiert!: ${_selectedEvent.value} ${_selectedEvent.value?.time} - ${updatedEvent.time}")
+                            } catch (e: Exception) {
+                                Log.e("ChatViewModel", "Fehler bei Event-Details: ${e.message}")
+                            } finally {
+                                semaphore.release()
                             }
-
-                        } catch (e: Exception) {
-                            Log.e("ChatViewModel", "Fehler bei Event-Details: ${e.message}")
-                        } finally {
-                            semaphore.release()
+                            Unit
                         }
-                        Unit
+                        deferreds.add(deferred)
+                    } else {
+                        Log.d("ChatViewModel", "Event bereits geladen: ${event.location} - ${event.activity}")
                     }
-                    deferreds.add(deferred)
                 }
             }
             deferreds.awaitAll()
@@ -206,47 +199,10 @@ class ChatViewModel @Inject constructor(
     fun updateEventRating(day: Int, eventIndex: Int, rating: EventRating) {
         val currentItinerary = _itinerary.value ?: return
 
-        /*
-        if (_hasRatingChanges.value == false) {
-            // Alle Events in allen Tagen auf LIKED setzen
-            var updatedDays = currentItinerary.days.map { dayPlan ->
-                val updatedEvents = dayPlan.events.mapIndexed { index, event ->
-                    if (index == eventIndex) event.copy(rating = EventRating.LIKED) else event
-                }
-                dayPlan.copy(_events = updatedEvents)
-            }
-
-            updatedDays = currentItinerary.days.map { dayPlan ->
-                dayPlan.copy(_events = dayPlan.events.map { event ->
-                    event.copy(rating = EventRating.LIKED)
-                })
-            }
-
-            _itinerary.update { it?.copy(days = updatedDays) }
-            _hasRatingChanges.value = true
-
-            //now set all buttons to LIKED
-            Log.d("ChatViewModel", "Click set all to LIKED")
-        }
-
-
-        // Erstelle eine neue Itinerary mit der aktualisierten Bewertung
-        var updatedDays = currentItinerary.days.map { dayPlan ->
-            if (dayPlan.day == day) {
-                val updatedEvents = dayPlan.events.mapIndexed { index, event ->
-                    if (index == eventIndex) event.copy(rating = rating) else event
-                }
-                dayPlan.copy(_events = updatedEvents)
-            } else {
-                dayPlan
-            }
-        }
-        */
-
         //CHANGE only the element
         var updatedDays = currentItinerary.days.map { dayPlan ->
             val updatedEvents = dayPlan.events.mapIndexed { index, event ->
-                if (index == eventIndex)
+                if (index == eventIndex && day == dayPlan.day )
                     event.copy(rating = rating)
                 else
                     if (_hasRatingChanges.value == false) {
@@ -273,12 +229,44 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             val currentItinerary = _itinerary.value ?: return@launch
 
+            Log.d("ChatViewModel", "CurrentItinerary: $currentItinerary")
             // Aktualisiere den Reiseplan basierend auf den Bewertungen
             val updatedItinerary = repository.updateItineraryWithRatings(currentItinerary)
-            _itinerary.value = updatedItinerary
+
+            // Kopiere Details von positiv bewerteten Events
+            val updatedDays = updatedItinerary.days.map { updatedDay ->
+                val currentDay = currentItinerary.days.find { it.day == updatedDay.day }
+
+                updatedDay.copy(_events = updatedDay.events.map { updatedEvent ->
+                    // Suche nach entsprechendem Event im aktuellen Itinerary
+                    val currentEvent = currentDay?.events?.find { currentEvent ->
+                        currentEvent.time == updatedEvent.time
+                    }
+
+                    // Wenn das Event im aktuellen Itinerary LIKED ist, behalte die Details bei
+                    if (currentEvent?.rating == EventRating.LIKED) {
+                        Log.d("ChatViewModel", "Copy event!")
+                        updatedEvent.copy(
+                            description = currentEvent.description,
+                            visitorInfo = currentEvent.visitorInfo,
+                            imagePath = currentEvent.imagePath,
+                            completelyLoaded = true
+                        )
+                    } else {
+                        Log.d("ChatViewModel", "Dont copy event! ${currentEvent}")
+                        updatedEvent.copy(
+                            completelyLoaded = false
+                        )
+                    }
+                })
+            }
+            var updatedItinerary2 = updatedItinerary.copy(days = updatedDays)
+
+            _itinerary.value = updatedItinerary2
+            Log.d("ChatViewModel", "updatedItinerary: $updatedItinerary2")
 
             // Schedule aktualisieren
-            val events = buildSchedule(updatedItinerary)
+            val events = buildSchedule(updatedItinerary2)
             _schedule.value = events
 
             // Status zurücksetzen
@@ -293,7 +281,7 @@ class ChatViewModel @Inject constructor(
 
             //now load event stuff from AI
             try {
-                Log.d("ChatViewModel", "Generiere Event-Details für aktualisierten Reiseplan...")
+                Log.d("ChatViewModel", "ApplyRatingChanges: Generiere Event-Details für aktualisierten Reiseplan...")
                 // Generiere Details für alle Events
                 generateEventDetails(_itinerary)
                 Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
