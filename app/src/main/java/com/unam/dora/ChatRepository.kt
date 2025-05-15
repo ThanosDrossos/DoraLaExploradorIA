@@ -48,6 +48,8 @@ class ChatRepository(
                     contents = listOf(Content(parts = listOf(Part(text = prompt))))
                 )
 
+                Log.d("APIRequest", "API Request fetchEventDetails")
+
                 val response = api.generateItinerary(request)
                 val rawText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
                     ?: throw Exception("No valid response received")
@@ -87,34 +89,6 @@ class ChatRepository(
                 )
             }
         }
-
-    // Funktion zum Generieren eines Bildes
-    /*
-    suspend fun generateImage(prompt: String): ByteArray =
-        withContext(Dispatchers.IO) {
-            val imageRequest = GeminiRequest(
-                contents = listOf(Content(parts = listOf(Part(text = prompt)))),
-                generationConfig = GenerationConfig(
-                    temperature = 0.8,
-                    responseModalities = listOf("TEXT", "IMAGE")
-                )
-            )
-
-            Log.e("ChatRepository", "Using old generateImage function!")
-
-            val response = api.generateImage(imageRequest)
-            // Annahme: Die Antwort enthält base64-kodierte Bilddaten
-
-            val imagePart = response.candidates.firstOrNull()?.content?.parts?.find {
-                it.inlineData != null
-            }
-
-            val base64Image = imagePart?.inlineData?.data
-                ?: throw Exception("No valid image received")
-
-            Base64.decode(base64Image, Base64.DEFAULT)
-        }
-*/
 
     /**
      * Calls Gemini API with a structured prompt, returns the Itinerary data class.
@@ -172,6 +146,7 @@ class ChatRepository(
                         contents = listOf(Content(parts = listOf(Part(text = enhancedPrompt))))
                     )
 
+                    Log.d("APIRequest", "API Request fetchItineray")
                     val response = api.generateItinerary(request)
 
                     val rawText =
@@ -206,10 +181,6 @@ class ChatRepository(
     
     Responde de manera útil, amable y concisa.
 """.trimIndent()
-
-    fun setCustomSystemPrompt(prompt: String) {
-        customSystemPrompt = prompt
-    }
 
     suspend fun fetchChatResponse(message: String, previousMessages: List<Message>, currentItinerary: Itinerary?): Pair<String, Itinerary?> =
         withContext(Dispatchers.IO) {
@@ -274,6 +245,8 @@ class ChatRepository(
                 val request = GeminiRequest(
                     contents = listOf(Content(parts = listOf(Part(text = fullPrompt))))
                 )
+
+                Log.d("APIRequest", "API Request fetchChatResponse")
 
                 val response = api.generateItinerary(request)
                 val responseText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
@@ -360,6 +333,8 @@ class ChatRepository(
             Mantén la misma estructura de días y el mismo número de eventos por día.
             Responde ÚNICAMENTE con el JSON actualizado en formato válido.
         """.trimIndent()
+
+            Log.d("APIRequest", "API Request fetchItineraryWithRatings")
 
             // API-Aufruf mit dem vorhandenen fetchItinerary
             return@withContext fetchItinerary(

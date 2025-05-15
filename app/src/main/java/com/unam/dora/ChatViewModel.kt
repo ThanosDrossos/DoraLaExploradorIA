@@ -412,10 +412,57 @@ class ChatViewModel @Inject constructor(
                     listOf(mood)
                 )
 
-                _itinerary.value = updatedItinerary
+                // Kopiere alle Event-Details von den unveränderten Tagen
+                val updatedDays = updatedItinerary.days.map { updatedDay ->
+                    // Wenn es NICHT der ausgewählte Tag ist, kopiere alle Details vom aktuellen Itinerary
+                    if (updatedDay.day != day) {
+                        Log.d("ChatViewModel", "Copy this day")
+                        val currentDay = currentItinerary.days.find { it.day == updatedDay.day }
+                        updatedDay.copy(_events = currentDay?.events ?: updatedDay.events)
+                    } else {
+                        Log.d("ChatViewModel", "Dont copy this day")
+                        // Für den ausgewählten Tag setze completelyLoaded auf false
+                        updatedDay.copy(_events = updatedDay.events.map { event ->
+                            event.copy(completelyLoaded = false)
+                        })
+                    }
+                }
+
+                /*
+                // Kopiere Details von positiv bewerteten Events
+                val updatedDays = updatedItinerary.days.map { updatedDay ->
+                    val currentDay = currentItinerary.days.find { it.day == updatedDay.day }
+
+                    updatedDay.copy(_events = updatedDay.events.map { updatedEvent ->
+                        // Suche nach entsprechendem Event im aktuellen Itinerary
+                        val currentEvent = currentDay?.events?.find { currentEvent ->
+                            currentEvent.time == updatedEvent.time
+                        }
+
+                        // Wenn das Event im aktuellen Itinerary LIKED ist, behalte die Details bei
+                        if (currentEvent?.rating == EventRating.LIKED) {
+                            Log.d("ChatViewModel", "Copy event!")
+                            updatedEvent.copy(
+                                description = currentEvent.description,
+                                visitorInfo = currentEvent.visitorInfo,
+                                imagePath = currentEvent.imagePath,
+                                completelyLoaded = true
+                            )
+                        } else {
+                            Log.d("ChatViewModel", "Dont copy event! ${currentEvent}")
+                            updatedEvent.copy(
+                                completelyLoaded = false
+                            )
+                        }
+                    })
+                }
+                */
+                var updatedItinerary2 = updatedItinerary.copy(days = updatedDays)
+                _itinerary.value = updatedItinerary2
+
 
                 try {
-                    Log.d("ChatViewModel", "Generiere Event-Details für aktualisierten Reiseplan...")
+                    Log.d("ChatViewModel", "UpdateItineraryWithMood: Generiere Event-Details für aktualisierten Reiseplan...")
                     generateEventDetails(_itinerary)
                     Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
                 } catch (e: Exception) {
@@ -476,7 +523,7 @@ class ChatViewModel @Inject constructor(
                     _itinerary.update { updatedItinerary }
 
                     try {
-                        Log.d("ChatViewModel", "Generiere Event-Details für aktualisierten Reiseplan...")
+                        Log.d("ChatViewModel", "SendUserMessage: Generiere Event-Details für aktualisierten Reiseplan...")
                         generateEventDetails(_itinerary)
                         Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
                     } catch (e: Exception) {
