@@ -249,18 +249,22 @@ class ChatRepository(
                 Log.d("APIRequest", "API Request fetchChatResponse")
 
                 val response = api.generateItinerary(request)
+                Log.d("APIRequest", "API Response: ${response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text}")
+
                 val responseText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
                     ?: "Lo siento, no pude procesar tu solicitud en este momento."
                 
                 // Versuchen, JSON aus der Antwort zu extrahieren
-                val jsonPattern = """\{[\s\S]*?"city"[\s\S]*?"days"[\s\S]*?\}""".toRegex()
+                //val jsonPattern = """\{[\s\S]*?"city"[\s\S]*?"days"[\s\S]*?\}""".toRegex()
+                val jsonPattern = """{[^{}]*(((?<!\})\{[^{}]*\})*[^{}]*)*\}""".toRegex()
+                Log.d("ChatRepository", "Try to find pattern: $jsonPattern")
                 val jsonMatch = jsonPattern.find(responseText)
-                
+                Log.d("ChatRepository", "JSONMatch: $jsonMatch")
                 if (jsonMatch != null) {
                     try {
                         val jsonText = jsonMatch.value
                         Log.d("ChatRepository", "Found JSON in response: $jsonText")
-                        
+                        Log.d("ChatRepository", "Done JSON printing")
                         // JSON in ein Itinerary-Objekt parsen
                         val updatedItinerary = kotlinx.serialization.json.Json {
                             ignoreUnknownKeys = true
@@ -276,6 +280,8 @@ class ChatRepository(
                     } catch (e: Exception) {
                         Log.e("ChatRepository", "Error parsing JSON from response: ${e.message}", e)
                     }
+                } else {
+                    Log.e("ChatRepository", "No JSON found in response")
                 }
                 
                 return@withContext Pair(responseText, null)
