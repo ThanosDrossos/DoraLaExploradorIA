@@ -163,10 +163,6 @@ fun EventDetailScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(currentEvent.description)
-            } else if (!isLoading) {
-                Button(onClick = { viewModel.loadEventDetailsIfMissing(currentEvent) }) {
-                    Text("Cargar detalles")
-                }
             }
 
             // Besucherinfo mit Neuladen-Funktion
