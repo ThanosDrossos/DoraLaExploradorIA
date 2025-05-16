@@ -146,7 +146,7 @@ class ChatRepository(
                         contents = listOf(Content(parts = listOf(Part(text = enhancedPrompt))))
                     )
 
-                    Log.d("APIRequest", "API Request fetchItineray")
+                    Log.d("APIRequest", "API Request fetchItinerary $enhancedPrompt")
                     val response = api.generateItinerary(request)
 
                     val rawText =
@@ -181,6 +181,33 @@ class ChatRepository(
     
     Responde de manera útil, amable y concisa.
 """.trimIndent()
+
+    fun extractJson(input: String): String? {
+        var startIndex = -1
+        var braceCount = 0
+
+        for (i in input.indices) {
+            when (input[i]) {
+                '{' -> {
+                    if (braceCount == 0) {
+                        startIndex = i
+                    }
+                    braceCount++
+                }
+                '}' -> {
+                    if (braceCount > 0) {
+                        braceCount--
+                        if (braceCount == 0 && startIndex != -1) {
+                            return input.substring(startIndex, i + 1)
+                        }
+                    }
+                }
+            }
+        }
+
+        return null
+    }
+
 
     suspend fun fetchChatResponse(message: String, previousMessages: List<Message>, currentItinerary: Itinerary?): Pair<String, Itinerary?> =
         withContext(Dispatchers.IO) {
@@ -256,13 +283,12 @@ class ChatRepository(
                 
                 // Versuchen, JSON aus der Antwort zu extrahieren
                 //val jsonPattern = """\{[\s\S]*?"city"[\s\S]*?"days"[\s\S]*?\}""".toRegex()
-                val jsonPattern = """{[^{}]*(((?<!\})\{[^{}]*\})*[^{}]*)*\}""".toRegex()
-                Log.d("ChatRepository", "Try to find pattern: $jsonPattern")
-                val jsonMatch = jsonPattern.find(responseText)
+                Log.d("ChatRepository", "Try to find pattern")
+                val jsonMatch = extractJson(responseText)
                 Log.d("ChatRepository", "JSONMatch: $jsonMatch")
                 if (jsonMatch != null) {
                     try {
-                        val jsonText = jsonMatch.value
+                        val jsonText = jsonMatch
                         Log.d("ChatRepository", "Found JSON in response: $jsonText")
                         Log.d("ChatRepository", "Done JSON printing")
                         // JSON in ein Itinerary-Objekt parsen
@@ -272,10 +298,11 @@ class ChatRepository(
                         }.decodeFromString<Itinerary>(jsonText)
                         
                         // Text ohne JSON extrahieren für die Anzeige
-                        val displayText = responseText.replace(jsonMatch.value, "")
+                        val displayText = responseText.replace(jsonMatch, "")
                             .trim()
                             .ifEmpty { "He actualizado tu itinerario según tu solicitud." }
-                        
+                        Log.d("ChatRepository", "Updated itinerary: $updatedItinerary")
+
                         return@withContext Pair(displayText, updatedItinerary)
                     } catch (e: Exception) {
                         Log.e("ChatRepository", "Error parsing JSON from response: ${e.message}", e)

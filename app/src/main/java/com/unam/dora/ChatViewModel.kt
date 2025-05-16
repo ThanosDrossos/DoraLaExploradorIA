@@ -428,35 +428,6 @@ class ChatViewModel @Inject constructor(
                     }
                 }
 
-                /*
-                // Kopiere Details von positiv bewerteten Events
-                val updatedDays = updatedItinerary.days.map { updatedDay ->
-                    val currentDay = currentItinerary.days.find { it.day == updatedDay.day }
-
-                    updatedDay.copy(_events = updatedDay.events.map { updatedEvent ->
-                        // Suche nach entsprechendem Event im aktuellen Itinerary
-                        val currentEvent = currentDay?.events?.find { currentEvent ->
-                            currentEvent.time == updatedEvent.time
-                        }
-
-                        // Wenn das Event im aktuellen Itinerary LIKED ist, behalte die Details bei
-                        if (currentEvent?.rating == EventRating.LIKED) {
-                            Log.d("ChatViewModel", "Copy event!")
-                            updatedEvent.copy(
-                                description = currentEvent.description,
-                                visitorInfo = currentEvent.visitorInfo,
-                                imagePath = currentEvent.imagePath,
-                                completelyLoaded = true
-                            )
-                        } else {
-                            Log.d("ChatViewModel", "Dont copy event! ${currentEvent}")
-                            updatedEvent.copy(
-                                completelyLoaded = false
-                            )
-                        }
-                    })
-                }
-                */
                 var updatedItinerary2 = updatedItinerary.copy(days = updatedDays)
                 _itinerary.value = updatedItinerary2
 
@@ -489,70 +460,65 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Modifizierte sendUserMessage-Methode, um zwischen Fragen und Plan-Änderungen zu unterscheiden
-     */
     @RequiresApi(Build.VERSION_CODES.O)
     fun sendUserMessage(text: String) {
         viewModelScope.launch {
-            // Benutzer-Nachricht einfügen
             val userMsg = Message(sender = Sender.USER, content = text)
             repository.insertMessage(userMsg)
 
             val currentItinerary = _itinerary.value
-            val currentDays = tripDays
-            val currentCity = tripCity
-
-            // Vorherige Nachrichten für Kontext
             val previousMessages = messages.value.takeLast(6)
 
-            // Überprüfen, ob dies eine Planänderung oder eine Frage ist
-            val isItineraryUpdate = determineIfItineraryUpdate(text)
+            try {
+                Log.d("ChatViewModel", "Verarbeite Nachricht...")
+                Log.d("ChatViewModel", "Aktueller Reiseplan: $currentItinerary")
+                val (responseText, updatedItinerary) = repository.fetchChatResponse(text, previousMessages, currentItinerary)
 
-            if (isItineraryUpdate) {
-                try {
-                    Log.d("ChatViewModel", "Itinerary-Änderung erkannt, verarbeite...")
+                if (updatedItinerary != null) {
+                    // Kopiere Details von unveränderten Events
+                    val updatedDays = updatedItinerary.days.map { updatedDay ->
+                        val currentDay = currentItinerary?.days?.find { it.day == updatedDay.day }
 
-                    // Wenn es sich um eine Planänderung handelt, aktualisieren wir den Plan
-                    val updatedItinerary = repository.fetchItinerary(text, currentCity, currentDays, tripMoods)
+                        updatedDay.copy(_events = updatedDay.events.map { updatedEvent ->
+                            // Suche entsprechendes Event im aktuellen Tag
+                            val currentEvent = currentDay?.events?.find { currentEvent ->
+                                currentEvent.time == updatedEvent.time &&
+                                        currentEvent.location == updatedEvent.location &&
+                                        currentEvent.activity == updatedEvent.activity
+                            }
 
-                    // Debug-Ausgabe für das aktualisierte Itinerary
-                    Log.d("ChatViewModel", "Aktualisiertes Itinerary erhalten: $updatedItinerary")
-
-                    // Speichern des aktualisierten Itineraries
-                    _itinerary.update { updatedItinerary }
-
-                    try {
-                        Log.d("ChatViewModel", "SendUserMessage: Generiere Event-Details für aktualisierten Reiseplan...")
-                        generateEventDetails(_itinerary)
-                        Log.d("ChatViewModel", "Itinerary mit Details done: ${_itinerary.value!!}")
-                    } catch (e: Exception) {
-                        Log.e("ChatViewModel", "Fehler beim Generieren der Event-Details: ${e.message}")
+                            if (currentEvent != null) {
+                                // Event existiert unverändert - kopiere alle Details
+                                currentEvent
+                            } else {
+                                // Neues oder geändertes Event - setze completelyLoaded auf false
+                                updatedEvent.copy(completelyLoaded = false)
+                            }
+                        })
                     }
 
-                    // Sicherstellen, dass der neue Wert gesetzt wurde
-                    Log.d("ChatViewModel", "Neuer Itinerary-Wert: ${_itinerary.value}")
+                    // Aktualisiere Itinerary mit kopierten Details
+                    val finalItinerary = updatedItinerary.copy(days = updatedDays)
+                    _itinerary.value = finalItinerary
 
-                    val responseText = repository.fetchChatResponse(text, previousMessages, currentItinerary)
-                    val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText.toString())
-                    repository.insertMessage(assistantMsg)
+                    // Generiere fehlende Details
+                    generateEventDetails(_itinerary)
 
                     // Schedule aktualisieren
-                    val events = buildSchedule(updatedItinerary)
+                    val events = buildSchedule(finalItinerary)
                     _schedule.value = events
-                } catch (e: Exception) {
-                    // Fehlerfall
-                    val errorMsg = Message(
-                        sender = Sender.ASSISTANT,
-                        content = "No pude actualizar el itinerario: ${e.message}"
-                    )
-                    repository.insertMessage(errorMsg)
                 }
-            } else {
-                // Normale Frage - normale Antwort zurückgeben
-                val responseText = repository.fetchChatResponse(text, previousMessages, currentItinerary)
-                val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText.toString())
+
+                // Antwort speichern
+                val assistantMsg = Message(sender = Sender.ASSISTANT, content = responseText)
                 repository.insertMessage(assistantMsg)
+
+            } catch (e: Exception) {
+                val errorMsg = Message(
+                    sender = Sender.ASSISTANT,
+                    content = "No pude procesar tu solicitud: ${e.message}"
+                )
+                repository.insertMessage(errorMsg)
             }
         }
     }
